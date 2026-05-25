@@ -79,6 +79,8 @@ export default function Navbar() {
           <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Sports</Link>
           <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Turfs</Link>
           <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Pricing</Link>
+          <Link href="/admin/login" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Admin</Link>
+          <Link href="/business/login" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Business</Link>
         </div>
 
         {/* CTA Buttons */}
@@ -109,6 +111,8 @@ export default function Navbar() {
               <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Sports</Link>
               <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Turfs</Link>
               <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
+              <Link href="/admin/login" className="text-sm text-gray-400 hover:text-white transition-colors">Admin</Link>
+              <Link href="/business/login" className="text-sm text-gray-400 hover:text-white transition-colors">Business</Link>
               <hr className="border-gray-700" />
               <Link href="/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign in</Link>
             </div>

@@ -1,0 +1,913 @@
+{
+  "info": {
+    "_postman_id": "9f3e1d0e-2f33-4d77-9f66-1f8a5c4d9a11",
+    "name": "Turf Backend API",
+    "description": "Complete Postman collection for the Turf backend, including admin auth, user auth, turfs, and bookings.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Auth",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Admin Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new-admin-name\",\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Change Admin Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"Password@456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auth/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Auth",
+      "item": [
+        {
+          "name": "Sign Up Business User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"business-owner\",\n  \"email\": \"business@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Login Business User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"business@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/business/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Business Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"updated-business-owner\",\n  \"email\": \"business@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Change Business Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"Password@456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/auth/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "auth", "password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Auth",
+      "item": [
+        {
+          "name": "Sign Up User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"contactNumber\": \"9999999999\",\n  \"address\": {\n    \"street\": \"Main Street\",\n    \"city\": \"Pune\",\n    \"state\": \"Maharashtra\",\n    \"zipCode\": \"411001\",\n    \"country\": \"India\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated User\",\n  \"contactNumber\": \"8888888888\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Change User Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password@123\",\n  \"newPassword\": \"Password@456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "password"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/auth/account",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "account"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public & Admin Turfs",
+      "item": [
+        {
+          "name": "Get All Public Turfs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs"]
+            }
+          }
+        },
+        {
+          "name": "Get Approved Turfs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs/approved/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "approved", "list"]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Turfs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs/featured",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "featured"]
+            }
+          }
+        },
+        {
+          "name": "Get Trending Turfs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs/trending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "trending"]
+            }
+          }
+        },
+        {
+          "name": "Get Turf By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs/{{turfId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Turf Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs/{{turfId}}/availability?date={{bookingDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}", "availability"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{bookingDate}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Turf",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerDetails\": {\n    \"name\": \"Admin Owner\",\n    \"contactNumber\": \"9999999999\",\n    \"email\": \"owner@example.com\"\n  },\n  \"turfDetails\": {\n    \"turfName\": \"Green Field Arena\",\n    \"description\": \"Professional turf for football and cricket.\",\n    \"sportsAvailable\": [\"football\", \"cricket\"],\n    \"surfaceType\": \"synthetic\",\n    \"dimensions\": {\n      \"length\": 100,\n      \"width\": 60,\n      \"unit\": \"meters\"\n    },\n    \"capacity\": 22\n  },\n  \"location\": {\n    \"address\": \"Near City Center\",\n    \"landmark\": \"Central Mall\",\n    \"city\": \"Pune\",\n    \"state\": \"Maharashtra\",\n    \"zipCode\": \"411001\",\n    \"googleMapLink\": \"https://maps.google.com\"\n  },\n  \"pricing\": {\n    \"weekdayRate\": 1000,\n    \"weekendRate\": 1500,\n    \"seasonalRate\": {\n      \"summer\": 1700,\n      \"monsoon\": 1400,\n      \"winter\": 1300\n    },\n    \"currency\": \"INR\",\n    \"minimumBookingHours\": 1,\n    \"cancellationPolicy\": \"Cancel at least 2 hours before slot.\"\n  },\n  \"availability\": {\n    \"openingTime\": \"06:00\",\n    \"closingTime\": \"23:00\",\n    \"closedDays\": [\"Monday\"],\n    \"customUnavailableDates\": []\n  },\n  \"amenities\": [\"parking\", \"changing room\", \"washroom\"],\n  \"gallery\": {\n    \"mainImage\": \"https://example.com/main.jpg\",\n    \"thumbnailImages\": [\"https://example.com/thumb1.jpg\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/turfs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Turfs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "admin", "list"]
+            }
+          }
+        },
+        {
+          "name": "Update Turf",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"turfDetails\": {\n    \"turfName\": \"Green Field Arena Updated\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs/{{turfId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Turf",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs/{{turfId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Turf Meta Info",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isApproved\": true,\n  \"isFeatured\": true,\n  \"isTrending\": false,\n  \"popularityScore\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs/{{turfId}}/meta",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}", "meta"]
+            }
+          }
+        },
+        {
+          "name": "Approve Turf",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs/{{turfId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Turf",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/turfs/{{turfId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "turfs", "{{turfId}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Dashboard",
+      "item": [
+        {
+          "name": "Get My Turfs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/business/turfs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "turfs"]
+            }
+          }
+        },
+        {
+          "name": "Create Business Turf",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerDetails\": {\n    \"name\": \"Business Owner\",\n    \"contactNumber\": \"9999999999\",\n    \"email\": \"business@example.com\"\n  },\n  \"turfDetails\": {\n    \"turfName\": \"Business Turf\",\n    \"description\": \"Owned by business user.\",\n    \"sportsAvailable\": [\"football\"],\n    \"surfaceType\": \"synthetic\",\n    \"dimensions\": {\n      \"length\": 90,\n      \"width\": 50,\n      \"unit\": \"meters\"\n    },\n    \"capacity\": 20\n  },\n  \"location\": {\n    \"address\": \"Business Area\",\n    \"landmark\": \"Main Road\",\n    \"city\": \"Pune\",\n    \"state\": \"Maharashtra\",\n    \"zipCode\": \"411001\",\n    \"googleMapLink\": \"https://maps.google.com\"\n  },\n  \"pricing\": {\n    \"weekdayRate\": 900,\n    \"weekendRate\": 1200,\n    \"currency\": \"INR\",\n    \"minimumBookingHours\": 1\n  },\n  \"availability\": {\n    \"openingTime\": \"06:00\",\n    \"closingTime\": \"23:00\",\n    \"closedDays\": [],\n    \"customUnavailableDates\": []\n  },\n  \"amenities\": [\"parking\", \"lights\"],\n  \"gallery\": {\n    \"mainImage\": \"https://example.com/main.jpg\",\n    \"thumbnailImages\": [\"https://example.com/thumb1.jpg\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/turfs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "turfs"]
+            }
+          }
+        },
+        {
+          "name": "Update My Turf",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"turfDetails\": {\n    \"turfName\": \"Updated Business Turf\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/turfs/{{turfId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "turfs", "{{turfId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete My Turf",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/business/turfs/{{turfId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "turfs", "{{turfId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Business Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/business/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Update Business Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingStatus\": \"confirmed\",\n  \"paymentStatus\": \"paid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/business/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Business Booking Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{businessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/business/bookings/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "business", "bookings", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User & Admin Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"turfId\": \"{{turfId}}\",\n  \"date\": \"{{bookingDate}}\",\n  \"timeSlot\": \"06:00 AM - 07:00 AM\",\n  \"paymentMethod\": \"online\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/bookings/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get Booking By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "admin"]
+            }
+          }
+        },
+        {
+          "name": "Update Booking Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingStatus\": \"confirmed\",\n  \"paymentStatus\": \"paid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Booking Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/bookings/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "all"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

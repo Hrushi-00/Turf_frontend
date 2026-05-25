@@ -35,11 +35,48 @@ export default function Home() {
   ];
 
   const features = [
-    { icon: "⚡", title: "Instant Booking", desc: "Confirm your slot in under 30 seconds. Lightning-fast booking" },
-    { icon: "📍", title: "Nearby Locations", desc: "Find premium turfs near you with real-time availability" },
-    { icon: "🔒", title: "Secure Payments", desc: "100% encrypted transactions. Pay online or at venue." },
-    { icon: "📅", title: "Easy Scheduling", desc: "Flexible scheduling with instant confirmation and reminders" },
+    { icon: "flash", title: "Instant Booking", desc: "Confirm your slot in under 30 seconds. Lightning-fast booking" },
+    { icon: "pin", title: "Nearby Locations", desc: "Find premium turfs near you with real-time availability" },
+    { icon: "lock", title: "Secure Payments", desc: "100% encrypted transactions. Pay online or at venue." },
+    { icon: "calendar", title: "Easy Scheduling", desc: "Flexible scheduling with instant confirmation and reminders" },
   ];
+
+  const renderFeatureIcon = (type: string) => {
+    const baseClass = "h-7 w-7 text-white";
+    switch (type) {
+      case "flash":
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className={baseClass} aria-hidden="true">
+            <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="currentColor" stroke="currentColor" strokeLinejoin="round" />
+          </svg>
+        );
+      case "pin":
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className={baseClass} aria-hidden="true">
+            <path d="M12 21s6-5.2 6-11a6 6 0 10-12 0c0 5.8 6 11 6 11z" stroke="currentColor" strokeWidth="2" />
+            <circle cx="12" cy="10" r="2.5" fill="currentColor" />
+          </svg>
+        );
+      case "lock":
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className={baseClass} aria-hidden="true">
+            <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 10V7a4 4 0 118 0v3" stroke="currentColor" strokeWidth="2" />
+          </svg>
+        );
+      case "calendar":
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className={baseClass} aria-hidden="true">
+            <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path d="M4 9h16" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M8 13h3M13 13h3M8 16h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="bg-black text-white min-h-screen overflow-x-hidden" style={{ fontFamily:"'Poppins','Bebas Neue',sans-serif", backgroundColor:"#0B0B0B" }}>
@@ -108,13 +145,18 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center px-6 lg:px-16 pt-24 pb-20 overflow-hidden">
         {/* Background image with overlay */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-black to-slate-900"/>
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-black/25 to-slate-900/60"/>
           <img
-            src="https://images.unsplash.com/photo-1552993881-338f5c15a658?w=1600&h=900&fit=crop"
-            alt="Sports turf background"
-            className="w-full h-full object-cover opacity-40"
+            src="https://static.vecteezy.com/system/resources/thumbnails/051/434/372/small/football-field-at-night-with-illuminated-goalposts-and-fresh-green-turf-under-stadium-lights-photo.jpeg"
+            alt="Football field at night"
+            className="w-full h-full object-cover"
+            style={{
+              objectPosition: "center 38%",
+              filter: "brightness(0.68) saturate(0.92) contrast(1.05)",
+            }}
           />
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/20 to-black/55"/>
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]"/>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 blur-3xl pointer-events-none"/>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/3 blur-3xl pointer-events-none"/>
         </div>
@@ -154,6 +196,7 @@ export default function Home() {
               </button>
             ))}
           </div>
+
         </div>
       </section>
 
@@ -317,7 +360,9 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((f,i)=>(
               <div key={f.title} className={`au group glass rounded-xl p-8 hover:border-white/30 transition-all duration-300`} style={{ animationDelay: `${0.1 + i * 0.12}s` }}>
-                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center text-3xl mb-6 group-hover:bg-white/15 transition-all">{f.icon}</div>
+                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center mb-6 group-hover:bg-white/15 transition-all">
+                  {renderFeatureIcon(f.icon)}
+                </div>
                 <h3 className="heading font-black text-lg mb-3">{f.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
               </div>

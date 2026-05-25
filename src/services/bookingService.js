@@ -1,11 +1,15 @@
 // Booking API Service
-const API_BASE_URL = "http://localhost:8000/api/bookings";
+import { buildApiUrl } from "./apiConfig";
+
+const USER_BOOKING_BASE_URL = buildApiUrl("/user/bookings");
+const ADMIN_BOOKING_BASE_URL = buildApiUrl("/admin/bookings");
+const BUSINESS_BOOKING_BASE_URL = buildApiUrl("/business/bookings");
 
 // User booking endpoints
 export const createBooking = async (bookingData) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/bookturf`, {
+    const response = await fetch(USER_BOOKING_BASE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,7 +32,7 @@ export const createBooking = async (bookingData) => {
 export const getUserBookings = async () => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/userbookings`, {
+    const response = await fetch(`${USER_BOOKING_BASE_URL}/me`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -64,7 +68,7 @@ export const getUserBookings = async () => {
 export const getAdminBookings = async () => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/admin/turfbookings`, {
+    const response = await fetch(ADMIN_BOOKING_BASE_URL, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +90,7 @@ export const getAdminBookings = async () => {
 export const getBookingStats = async () => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/bookings/stats`, {
+    const response = await fetch(`${ADMIN_BOOKING_BASE_URL}/stats`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -105,11 +109,55 @@ export const getBookingStats = async () => {
   }
 };
 
+export const getBusinessBookings = async () => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(BUSINESS_BOOKING_BASE_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getBusinessBookingStats = async () => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(`${BUSINESS_BOOKING_BASE_URL}/stats`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
 // Super admin booking endpoints
 export const getAllBookings = async () => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/all`, {
+    const response = await fetch(`${ADMIN_BOOKING_BASE_URL}/all`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -130,8 +178,8 @@ export const getAllBookings = async () => {
 
 export const updateBookingStatus = async (bookingId, status) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/${bookingId}`, {
+    const token = localStorage.getItem("adminToken");
+    const response = await fetch(`${ADMIN_BOOKING_BASE_URL}/${bookingId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -154,13 +202,13 @@ export const updateBookingStatus = async (bookingId, status) => {
 export const cancelBooking = async (bookingId) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/${bookingId}`, {
+    const response = await fetch(`${USER_BOOKING_BASE_URL}/${bookingId}/cancel`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({ bookingStatus: "cancelled" }),
+      body: JSON.stringify({}),
     });
 
     const data = await response.json();
@@ -169,6 +217,29 @@ export const cancelBooking = async (bookingId) => {
     } else {
       return { success: false, message: data.message };
     }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const updateBusinessBookingStatus = async (bookingId, bookingData) => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(`${BUSINESS_BOOKING_BASE_URL}/${bookingId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(bookingData),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
   } catch (error) {
     return { success: false, message: error.message };
   }

@@ -1,9 +1,12 @@
 // Turf API Service
-const API_BASE_URL = "http://localhost:8000/api/turfs";
+import { buildApiUrl } from "./apiConfig";
+
+const PUBLIC_TURF_BASE_URL = buildApiUrl("/turfs");
+const ADMIN_TURF_BASE_URL = buildApiUrl("/admin/turfs");
 
 export const getTurfById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`);
+    const response = await fetch(`${PUBLIC_TURF_BASE_URL}/${id}`);
     const data = await response.json();
     if (response.ok) {
       return { success: true, data };
@@ -17,7 +20,7 @@ export const getTurfById = async (id) => {
 
 export const getApprovedTurfs = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/approved/list`);
+    const response = await fetch(`${PUBLIC_TURF_BASE_URL}/approved/list`);
     const data = await response.json();
     if (response.ok) {
       // Transform backend data to match frontend requirements
@@ -60,7 +63,7 @@ export const searchTurfs = async (filters = {}) => {
     if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
     if (filters.sortBy) queryParams.append("sortBy", filters.sortBy);
 
-    const url = `${API_BASE_URL}/approved/list?${queryParams.toString()}`;
+    const url = `${PUBLIC_TURF_BASE_URL}/approved/list?${queryParams.toString()}`;
     const response = await fetch(url);
     const data = await response.json();
 
@@ -97,7 +100,7 @@ export const searchTurfs = async (filters = {}) => {
 export const addTurf = async (turfData) => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(API_BASE_URL, {
+    const response = await fetch(ADMIN_TURF_BASE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -120,7 +123,7 @@ export const addTurf = async (turfData) => {
 export const updateTurf = async (id, turfData) => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -143,7 +146,7 @@ export const updateTurf = async (id, turfData) => {
 export const deleteTurf = async (id) => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}`, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -164,7 +167,7 @@ export const deleteTurf = async (id) => {
 export const approveTurf = async (id) => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/${id}/approve`, {
+    const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}/approve`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -187,7 +190,7 @@ export const approveTurf = async (id) => {
 export const rejectTurf = async (id, reason) => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${API_BASE_URL}/${id}/reject`, {
+    const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}/reject`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -202,6 +205,145 @@ export const rejectTurf = async (id, reason) => {
     } else {
       return { success: false, message: data.message };
     }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getAllAdminTurfs = async () => {
+  try {
+    const token = localStorage.getItem("adminToken");
+    const response = await fetch(ADMIN_TURF_BASE_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getBusinessTurfs = async () => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(buildApiUrl("/business/turfs"), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data: Array.isArray(data) ? data : data.data || [] };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const createBusinessTurf = async (turfData) => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(buildApiUrl("/business/turfs"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(turfData),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const updateBusinessTurf = async (id, turfData) => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(buildApiUrl(`/business/turfs/${id}`), {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(turfData),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const deleteBusinessTurf = async (id) => {
+  try {
+    const token = localStorage.getItem("businessToken");
+    const response = await fetch(buildApiUrl(`/business/turfs/${id}`), {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return { success: true, data };
+    }
+
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getFeaturedTurfs = async () => {
+  try {
+    const response = await fetch(`${PUBLIC_TURF_BASE_URL}/featured`);
+    const data = await response.json();
+    if (response.ok) {
+      const turfs = Array.isArray(data) ? data : data.data || [];
+      return { success: true, data: turfs };
+    }
+    return { success: false, message: data.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const getTrendingTurfs = async () => {
+  try {
+    const response = await fetch(`${PUBLIC_TURF_BASE_URL}/trending`);
+    const data = await response.json();
+    if (response.ok) {
+      const turfs = Array.isArray(data) ? data : data.data || [];
+      return { success: true, data: turfs };
+    }
+    return { success: false, message: data.message };
   } catch (error) {
     return { success: false, message: error.message };
   }
