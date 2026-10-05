@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useRef } from "react";
 import { getCurrentUser, isUserLoggedIn, logout } from "@/src/services/authService";
 import { platformApi } from "@/src/services/platformService";
 
@@ -12,15 +12,37 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [user, setUser] = useState<any>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     setUser(isUserLoggedIn() ? getCurrentUser() : null);
+    setMobileMenuOpen(false);
     if (pathname === "/dashboard/booking/turfs") {
       setSearchValue(new URLSearchParams(window.location.search).get("q") || "");
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const closeOnOutsideTap = (event: PointerEvent) => {
+      if (event.target instanceof Node && !navRef.current?.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideTap);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideTap);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileMenuOpen]);
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -113,7 +135,7 @@ export default function Navbar() {
         }
       `}</style>
 
-      <nav className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 2xl:px-16 py-3 sm:py-4 transition-all duration-500 ${scrollY > 20 ? "glass border-b border-white/20" : "bg-transparent"}`}>
+      <nav ref={navRef} className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 2xl:px-16 py-3 sm:py-4 transition-all duration-500 ${scrollY > 20 ? "glass border-b border-white/20" : "bg-transparent"}`}>
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-lg font-black text-black sm:h-10 sm:w-10">T</div>
@@ -197,10 +219,10 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-black border-b border-white/20 xl:hidden">
             <div className="flex flex-col gap-4 px-6 py-6">
-              <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Explore</Link>
-              <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Sports</Link>
-              <Link href="/dashboard/booking/turfs" className="text-sm text-gray-400 hover:text-white transition-colors">Turfs / Search</Link>
-              <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Explore</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Sports</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/dashboard/booking/turfs" className="text-sm text-gray-400 hover:text-white transition-colors">Turfs / Search</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
               {!pathname.startsWith("/dashboard") && (
                 <Link href="/dashboard/booking/turfs" onClick={() => setMobileMenuOpen(false)} className="cta-primary inline-flex w-full justify-center rounded-lg px-5 py-3 text-sm font-black text-black sm:hidden">
                   Book Now
@@ -218,19 +240,19 @@ export default function Navbar() {
               <hr className="border-gray-700" />
               {user ? (
                 <>
-                  <Link href="/dashboard" className="flex items-center gap-3 text-sm text-gray-400 hover:text-white transition-colors">
+                  <Link onClick={() => setMobileMenuOpen(false)} href="/dashboard" className="flex items-center gap-3 text-sm text-gray-400 hover:text-white transition-colors">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white">
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.6-3.2 3.2-5 7-5s6.4 1.8 7 5" strokeLinecap="round" /></svg>
                     </span>
                     My profile {user.name ? `· ${user.name}` : ""}
                   </Link>
-                  <Link href="/dashboard#profile-edit" className="pl-12 text-sm text-gray-400 hover:text-white transition-colors">Edit profile</Link>
+                  <Link onClick={() => setMobileMenuOpen(false)} href="/dashboard#profile-edit" className="pl-12 text-sm text-gray-400 hover:text-white transition-colors">Edit profile</Link>
                   <button type="button" onClick={handleLogout} className="pl-12 text-left text-sm text-red-300 hover:text-red-200 transition-colors">Log out</button>
                 </>
               ) : (
                 <>
-                  <Link href="/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign in</Link>
-                  <Link href="/auth/register" className="text-sm text-gray-400 hover:text-white transition-colors">Sign up</Link>
+                  <Link onClick={() => setMobileMenuOpen(false)} href="/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign in</Link>
+                  <Link onClick={() => setMobileMenuOpen(false)} href="/auth/register" className="text-sm text-gray-400 hover:text-white transition-colors">Sign up</Link>
                 </>
               )}
             </div>

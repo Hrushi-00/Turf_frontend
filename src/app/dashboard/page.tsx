@@ -17,10 +17,28 @@ const formatAddress = (address: unknown) => {
     .join(", ") || "N/A";
 };
 
+type DashboardUser = {
+  name?: string;
+  email?: string;
+  contactNumber?: string;
+  address?: unknown;
+};
+
+type DashboardBooking = {
+  id: string;
+  turf: string;
+  sport: string;
+  date: string;
+  time: string;
+  status: string;
+  paymentStatus: string;
+  price: number;
+};
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("upcoming");
-  const [user, setUser] = useState<any>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [user, setUser] = useState<DashboardUser | null>(null);
+  const [bookings, setBookings] = useState<DashboardBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -48,8 +66,8 @@ export default function DashboardPage() {
       if (result.success) {
         setBookings(result.data);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not load dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -88,7 +106,7 @@ export default function DashboardPage() {
   const visibleBookings = activeTab === "upcoming" ? upcomingBookings : activeTab === "completed" ? completedBookings : cancelledBookings;
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-6 lg:px-16 pb-20 overflow-hidden">
+    <div className="min-h-screen overflow-x-clip bg-black px-4 pb-16 pt-24 text-white sm:px-6 sm:pb-20 lg:px-16">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
 
@@ -128,19 +146,19 @@ export default function DashboardPage() {
         }
       `}</style>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/10 via-black to-black pointer-events-none"/>
+      <div className="absolute inset-0 bg-linear-to-br from-slate-900/10 via-black to-black pointer-events-none"/>
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/3 blur-3xl pointer-events-none"/>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/2 blur-3xl pointer-events-none"/>
 
-      <div className="relative z-10 max-w-7xl mx-auto">
+      <div className="relative z-10 mx-auto w-full min-w-0 max-w-7xl">
         {/* Header */}
-        <div className="mb-12">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="mb-8 sm:mb-12">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             <div>
-              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-5xl md:text-6xl tracking-wide mb-2">Your Dashboard</h1>
+              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="mb-2 text-4xl tracking-wide sm:text-5xl md:text-6xl">Your Dashboard</h1>
               {user && <p className="text-gray-400">Welcome back, <span className="text-white font-bold">{user.name || user.email}</span></p>}
             </div>
-            <Link href="/dashboard/booking/turfs" className="cta-primary px-8 py-4 rounded-lg font-black text-black w-fit">
+            <Link href="/dashboard/booking/turfs" className="cta-primary inline-flex min-h-12 w-full items-center justify-center rounded-lg px-6 py-3 font-black text-black sm:w-fit sm:px-8 sm:py-4">
               BOOK A TURF
             </Link>
           </div>
@@ -148,10 +166,10 @@ export default function DashboardPage() {
 
         {/* User Profile Card */}
         {user && (
-          <div className="glass p-8 rounded-xl mb-12 border border-gray-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-2xl font-black mb-4">Profile Information</h2>
+          <div className="glass mb-8 min-w-0 rounded-xl border border-gray-700 p-4 sm:mb-12 sm:p-6 md:p-8">
+            <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="mb-4 text-2xl font-black">Profile Information</h2>
                 <div className="space-y-3">
                   <div>
                     <p className="text-gray-400 text-sm">Full Name</p>
@@ -159,7 +177,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Email</p>
-                    <p className="font-bold text-lg">{user.email || "N/A"}</p>
+                    <p className="break-all text-base font-bold sm:text-lg">{user.email || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Contact Number</p>
@@ -171,7 +189,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <button type="button" onClick={() => setEditOpen((open) => !open)} className="px-6 py-3 border border-gray-600 rounded-lg font-bold hover:border-white transition-all">
+              <button type="button" onClick={() => setEditOpen((open) => !open)} className="min-h-11 w-full shrink-0 rounded-lg border border-gray-600 px-5 py-2.5 text-sm font-bold transition-all hover:border-white sm:w-auto sm:px-6 sm:py-3 sm:text-base">
                 Edit Profile
               </button>
             </div>
@@ -195,14 +213,14 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-4 mb-12">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:mb-12 sm:gap-4 md:grid-cols-4">
           {[
             { label: "Upcoming", value: upcomingBookings.length.toString() },
             { label: "Total Booked", value: bookings.length.toString() },
             { label: "Spent", value: `₹${bookings.reduce((sum, b) => sum + (b.price || 0), 0)}` },
             { label: "Rating", value: "4.8" },
           ].map(s => (
-            <div key={s.label} className="glass p-6 rounded-lg">
+            <div key={s.label} className="glass min-w-0 rounded-lg p-4 sm:p-6">
               <p className="text-gray-400 text-sm mb-2">{s.label}</p>
               <div className="flex items-center gap-3">
                 <p style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl font-black">{s.value}</p>
@@ -212,24 +230,24 @@ export default function DashboardPage() {
         </div>
 
         {/* Bookings Section */}
-        <div className="glass p-8 rounded-xl">
+        <div className="glass min-w-0 rounded-xl p-4 sm:p-6 md:p-8">
           {/* Tabs */}
-          <div className="flex gap-8 mb-8 border-b border-gray-700 pb-4">
+          <div className="mb-6 grid grid-cols-3 gap-1 border-b border-gray-700 pb-3 sm:mb-8 sm:gap-6 sm:pb-4">
             {[
-              { key: "upcoming", label: "Upcoming Bookings" },
-              { key: "completed", label: "Completed Bookings" },
-              { key: "cancelled", label: "Cancelled Bookings" },
+              { key: "upcoming", label: "Upcoming Bookings", shortLabel: "Upcoming" },
+              { key: "completed", label: "Completed Bookings", shortLabel: "Completed" },
+              { key: "cancelled", label: "Cancelled Bookings", shortLabel: "Cancelled" },
             ].map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`tab-btn font-bold text-lg transition-all pb-2 border-b-2 ${
+                className={`tab-btn min-w-0 whitespace-nowrap px-1 pb-2 text-center text-[11px] font-bold transition-all border-b-2 sm:px-2 sm:text-base md:text-lg ${
                   activeTab === tab.key
                     ? "border-white text-white"
                     : "border-transparent text-gray-400 hover:text-white"
                 }`}
               >
-                {tab.label}
+                <><span className="sm:hidden">{tab.shortLabel}</span><span className="hidden sm:inline">{tab.label}</span></>
               </button>
             ))}
           </div>
@@ -251,14 +269,14 @@ export default function DashboardPage() {
               </div>
             ) : (
               visibleBookings.map(booking => (
-                <div key={booking.id} className="booking-card glass p-6 rounded-lg">
+                <div key={booking.id} className="booking-card glass min-w-0 rounded-lg p-4 sm:p-5 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-xl font-black mb-2">{booking.turf}</h3>
-                      <p className="text-gray-400 text-sm mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="mb-2 wrap-break-word text-xl font-black">{booking.turf}</h3>
+                      <p className="mb-3 wrap-break-word text-sm text-gray-400">
                         <span className="text-white font-bold">{booking.sport}</span> · {booking.date} · {booking.time}
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <span className={`inline-block px-4 py-1 rounded-full text-sm font-bold capitalize ${
                           booking.status === "confirmed" ? "bg-green-500/20 text-green-400" :
                           booking.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
@@ -275,14 +293,14 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="w-full min-w-0 text-left sm:w-auto sm:text-right">
                       <p className="text-2xl font-black text-white mb-3">₹{booking.price}</p>
-                      <div className="space-x-2">
-                        <Link href={`/dashboard/bookings/${encodeURIComponent(booking.id)}`} className="inline-block px-4 py-2 border border-gray-600 rounded-lg hover:border-white transition-all text-sm font-bold">
+                      <div className="flex flex-col gap-2 min-[420px]:flex-row sm:justify-end">
+                        <Link href={`/dashboard/bookings/${encodeURIComponent(booking.id)}`} className="inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-gray-600 px-4 py-2 text-sm font-bold transition-all hover:border-white min-[420px]:w-auto">
                           View Details
                         </Link>
                         {["pending", "confirmed"].includes(booking.status) && (
-                          <button disabled={cancellingId === booking.id} onClick={() => void handleCancelBooking(booking.id)} className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all text-sm font-bold disabled:opacity-50">
+                          <button disabled={cancellingId === booking.id} onClick={() => void handleCancelBooking(booking.id)} className="min-h-10 w-full rounded-lg bg-red-500/20 px-4 py-2 text-sm font-bold text-red-400 transition-all hover:bg-red-500/30 disabled:opacity-50 min-[420px]:w-auto">
                             {cancellingId === booking.id ? "Cancelling…" : "Cancel"}
                           </button>
                         )}

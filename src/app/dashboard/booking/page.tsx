@@ -208,42 +208,42 @@ function BookingContent() {
   const nextDays = useMemo(() => Array.from({ length: 10 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return localDate(d); }), []);
 
   return (
-    <main className="min-h-screen bg-[#090b0a] px-5 pb-20 pt-28 text-white md:px-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#090b0a] px-4 pb-16 pt-24 text-white sm:px-6 sm:pb-20 sm:pt-28 lg:px-10">
+      <div className="mx-auto w-full min-w-0 max-w-6xl">
         <Link href="/dashboard/booking/turfs" className="text-sm text-lime-300 hover:text-lime-200">← Browse venues</Link>
-        <div className="mb-9 mt-5"><p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">Booking · Step 1 of 3</p><h1 className="mt-2 text-4xl font-black md:text-5xl">Choose your slot</h1><p className="mt-2 text-zinc-400">Availability and price come from the venue service.</p></div>
+        <div className="mb-6 mt-3 sm:mb-9 sm:mt-5"><p className="text-[11px] font-bold uppercase tracking-[.2em] text-lime-300 sm:text-xs sm:tracking-[.25em]">Booking · Step 1 of 3</p><h1 className="mt-2 text-3xl font-black sm:text-4xl md:text-5xl">Choose your slot</h1><p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">Availability and price come from the venue service.</p></div>
         {error && <div role="alert" className="mb-5 rounded-xl border border-red-900 bg-red-950/50 p-4 text-red-200">{error}</div>}
         {notice && <div role="status" className="mb-5 rounded-xl border border-lime-900 bg-lime-950/50 p-4 text-lime-200">{notice} <Link className="underline" href="/dashboard">Open dashboard</Link></div>}
-        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-          <section className="space-y-6">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]">
-              <div className="grid md:grid-cols-[240px_1fr]">
-                {turf?.gallery?.mainImage ? <img src={turf.gallery.mainImage} alt={turfName} className="h-48 w-full object-cover md:h-full md:min-h-48" /> : <div className="h-48 bg-gradient-to-br from-lime-950 to-zinc-900 md:h-full md:min-h-48" />}
-                <div className="p-6 md:p-8">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+          <section className="w-full min-w-0 space-y-4 sm:space-y-6">
+            <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]">
+              <div className="grid min-w-0 sm:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]">
+                {turf?.gallery?.mainImage ? <img src={turf.gallery.mainImage} alt={turfName} className="h-44 w-full object-cover sm:h-full sm:min-h-48" /> : <div className="h-44 bg-linear-to-br from-lime-950 to-zinc-900 sm:h-full sm:min-h-48" />}
+                <div className="min-w-0 p-4 sm:p-5 md:p-7">
                   <p className="text-sm text-zinc-400">Selected venue</p>
-                  <h2 className="mt-1 text-2xl font-bold">{loadingTurf ? "Loading venue…" : turfName}</h2>
+                  <h2 className="mt-1 wrap-break-word text-xl font-bold sm:text-2xl">{loadingTurf ? "Loading venue…" : turfName}</h2>
                   <p className="mt-1 text-sm text-zinc-400">{sport}{turf?.location?.city ? ` · ${turf.location.city}` : ""}</p>
-                  <p className="mt-3 flex items-center gap-2 text-sm"><span className="text-amber-300" aria-label={rating ? `${rating.toFixed(1)} out of 5 stars` : "No rating yet"}>★★★★★</span><strong>{rating ? rating.toFixed(1) : "New"}</strong><span className="text-zinc-500">{reviewCount ? `(${reviewCount} reviews)` : "· No reviews yet"}</span></p>
+                  <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="text-amber-300" aria-label={rating ? `${rating.toFixed(1)} out of 5 stars` : "No rating yet"}>★★★★★</span><strong>{rating ? rating.toFixed(1) : "New"}</strong><span className="text-zinc-500">{reviewCount ? `(${reviewCount} reviews)` : "· No reviews yet"}</span></p>
                   {turf?.turfDetails?.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-zinc-300">{turf.turfDetails.description}</p>}
                   <Link href={`/dashboard/booking/turfs/${encodeURIComponent(turfId)}`} className="mt-4 inline-flex text-sm font-semibold text-lime-300 hover:text-lime-200">View photos & full turf details</Link>
                 </div>
               </div>
               {turf?.gallery?.thumbnailImages?.length ? <div className="flex gap-3 overflow-x-auto border-t border-white/10 p-3">{turf.gallery.thumbnailImages.slice(0, 5).map((image, index) => <img key={`${image}-${index}`} src={image} alt={`${turfName} photo ${index + 2}`} className="h-16 w-24 shrink-0 rounded-lg object-cover" />)}</div> : null}
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[.035] p-6 md:p-8">
+            <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5 md:p-8">
               <h2 className="mb-4 text-lg font-bold">1. Select a date</h2>
-              <div className="flex gap-2 overflow-x-auto pb-2">{nextDays.map((day) => <button key={day} onClick={() => setDate(day)} className={`min-w-20 rounded-xl border px-3 py-3 text-sm ${date === day ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 bg-black/30 text-zinc-300"}`}><span className="block text-xs">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span><span className="mt-1 block font-bold">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></button>)}</div>
+              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2">{nextDays.map((day) => <button key={day} onClick={() => setDate(day)} className={`min-w-20 shrink-0 snap-start rounded-xl border px-3 py-3 text-sm ${date === day ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 bg-black/30 text-zinc-300"}`}><span className="block text-xs">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span><span className="mt-1 block font-bold">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></button>)}</div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[.035] p-6 md:p-8">
-              <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">2. Choose an available time</h2><button onClick={loadSlots} className="text-sm text-lime-300">Refresh</button></div>
+            <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5 md:p-8">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2"><h2 className="text-base font-bold sm:text-lg">2. Choose an available time</h2><button onClick={loadSlots} className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-lime-300 hover:bg-lime-300/10">Refresh</button></div>
               {loadingSlots ? <p className="text-zinc-400">Checking live availability…</p> : slots.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{slots.map((slot, index) => { const label = slotLabel(slot); return <button key={`${label}-${index}`} onClick={() => setSelectedSlot(label)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${selectedSlot === label ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 text-zinc-200 hover:border-lime-300/60"}`}>{label}</button>; })}</div> : <p className="text-zinc-400">No bookable times for this date. The venue may be closed, outside its operating hours, fully booked, or missing its schedule. Try another date or refresh.</p>}
             </div>
           </section>
-          <aside className="h-fit rounded-2xl border border-white/10 bg-white/[.035] p-6 lg:sticky lg:top-24">
+          <aside className="h-fit w-full max-w-full min-w-0 wrap-break-word rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-6 lg:sticky lg:top-24">
             <p className="text-xs font-bold uppercase tracking-[.2em] text-lime-300">Booking summary</p><h2 className="mt-3 text-xl font-bold">{turfName}</h2>
-            <div className="my-5 space-y-3 border-y border-white/10 py-5 text-sm"><div className="flex justify-between"><span className="text-zinc-400">Sport</span><span>{sport}</span></div><div className="flex justify-between"><span className="text-zinc-400">Date</span><span>{date}</span></div><div className="flex justify-between"><span className="text-zinc-400">Time</span><span>{selectedSlot || "Choose a slot"}</span></div></div>
+            <div className="my-5 space-y-3 border-y border-white/10 py-5 text-sm"><div className="flex items-start justify-between gap-3"><span className="shrink-0 text-zinc-400">Sport</span><span className="min-w-0 wrap-break-word text-right">{sport}</span></div><div className="flex items-start justify-between gap-3"><span className="shrink-0 text-zinc-400">Date</span><span className="min-w-0 wrap-break-word text-right">{date}</span></div><div className="flex items-start justify-between gap-3"><span className="shrink-0 text-zinc-400">Time</span><span className="min-w-0 wrap-break-word text-right">{selectedSlot || "Choose a slot"}</span></div></div>
             <p className="text-xs text-zinc-500">Indicative base rate from venue details. Final payable amount is calculated by the backend.</p><p className="mt-2 text-3xl font-black">₹{price}<span className="ml-2 text-sm font-normal text-zinc-400">/ hour</span></p>
-            <button disabled={!selectedSlot || submitting || loadingTurf} onClick={handleBooking} className="mt-6 w-full rounded-xl bg-lime-300 px-4 py-4 font-extrabold text-black disabled:cursor-not-allowed disabled:opacity-40">{submitting ? "Starting secure checkout…" : "Continue to payment"}</button>
+            <button disabled={!selectedSlot || submitting || loadingTurf} onClick={handleBooking} className="mt-5 min-h-12 w-full rounded-xl bg-lime-300 px-4 py-3 font-extrabold text-black disabled:cursor-not-allowed disabled:opacity-40 sm:mt-6 sm:min-h-14 sm:py-4">{submitting ? "Starting secure checkout…" : "Continue to payment"}</button>
             <p className="mt-3 text-center text-xs text-zinc-500">Slot confirmation is completed by the booking and payment APIs.</p>
           </aside>
         </div>
