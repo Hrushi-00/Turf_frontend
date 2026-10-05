@@ -1,9 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { getCurrentUser } from "@/src/services/authService";
-import { getUserBookings } from "@/src/services/bookingService";
+import { FormEvent, useState, useEffect } from "react";
+import { getCurrentUser, updateUserProfile } from "@/src/services/authService";
+import { cancelBooking, getUserBookings } from "@/src/services/bookingService";
+
+const formatAddress = (address: unknown) => {
+  if (typeof address === "string") return address;
+  if (!address || typeof address !== "object" || Array.isArray(address)) return "N/A";
+
+  const fields = address as Record<string, unknown>;
+  return [fields.street, fields.city, fields.state, fields.zipCode, fields.country]
+    .filter((part): part is string | number => typeof part === "string" || typeof part === "number")
+    .map(String)
+    .filter(Boolean)
+    .join(", ") || "N/A";
+};
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -11,8 +23,14 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileForm, setProfileForm] = useState({ name: "", contactNumber: "" });
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (window.location.hash === "#profile-edit") setEditOpen(true);
     fetchUserData();
   }, []);
 
@@ -24,6 +42,7 @@ export default function DashboardPage() {
         return;
       }
       setUser(currentUser);
+      setProfileForm({ name: currentUser.name || "", contactNumber: currentUser.contactNumber || "" });
 
       const result = await getUserBookings();
       if (result.success) {
@@ -36,8 +55,37 @@ export default function DashboardPage() {
     }
   };
 
-  const pastBookings = bookings.filter(b => b.status === "completed");
-  const upcomingBookings = bookings.filter(b => b.status !== "completed");
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingProfile(true);
+    setProfileMessage("");
+    const result = await updateUserProfile(profileForm);
+    if (result.success) {
+      setUser(getCurrentUser());
+      setProfileMessage("Profile updated successfully.");
+      setEditOpen(false);
+    } else {
+      setProfileMessage(result.message || "Could not update profile.");
+    }
+    setSavingProfile(false);
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+    setCancellingId(bookingId);
+    const result = await cancelBooking(bookingId);
+    if (result.success) {
+      await fetchUserData();
+      setActiveTab("cancelled");
+    }
+    else setError(result.message || "Could not cancel the booking.");
+    setCancellingId(null);
+  };
+
+  const completedBookings = bookings.filter((booking) => booking.status === "completed");
+  const cancelledBookings = bookings.filter((booking) => ["cancelled", "canceled"].includes(booking.status));
+  const upcomingBookings = bookings.filter((booking) => ["pending", "confirmed"].includes(booking.status));
+  const visibleBookings = activeTab === "upcoming" ? upcomingBookings : activeTab === "completed" ? completedBookings : cancelledBookings;
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 px-6 lg:px-16 pb-20 overflow-hidden">
@@ -119,14 +167,30 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Location</p>
-                    <p className="font-bold text-lg">{user.address || "N/A"}</p>
+                    <p className="font-bold text-lg">{formatAddress(user.address)}</p>
                   </div>
                 </div>
               </div>
-              <Link href="#" className="px-6 py-3 border border-gray-600 rounded-lg font-bold hover:border-white transition-all">
+              <button type="button" onClick={() => setEditOpen((open) => !open)} className="px-6 py-3 border border-gray-600 rounded-lg font-bold hover:border-white transition-all">
                 Edit Profile
-              </Link>
+              </button>
             </div>
+            {editOpen && (
+              <form id="profile-edit" onSubmit={saveProfile} className="mt-8 grid gap-4 border-t border-gray-700 pt-6 sm:grid-cols-2">
+                <label className="text-sm text-gray-400">Full name
+                  <input required value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} className="mt-2 w-full rounded-lg border border-gray-700 bg-black px-4 py-3 text-white outline-none focus:border-white" />
+                </label>
+                <label className="text-sm text-gray-400">Contact number
+                  <input value={profileForm.contactNumber} onChange={(event) => setProfileForm({ ...profileForm, contactNumber: event.target.value })} className="mt-2 w-full rounded-lg border border-gray-700 bg-black px-4 py-3 text-white outline-none focus:border-white" />
+                </label>
+                <div className="flex items-center gap-3 sm:col-span-2">
+                  <button disabled={savingProfile} className="rounded-lg bg-white px-5 py-3 font-bold text-black disabled:opacity-50">{savingProfile ? "Saving…" : "Save changes"}</button>
+                  <button type="button" onClick={() => setEditOpen(false)} className="rounded-lg border border-gray-600 px-5 py-3 font-bold hover:border-white">Cancel</button>
+                  {profileMessage && <span role="status" className="text-sm text-gray-300">{profileMessage}</span>}
+                </div>
+              </form>
+            )}
+            {!editOpen && profileMessage && <p role="status" className="mt-4 text-sm text-green-300">{profileMessage}</p>}
           </div>
         )}
 
@@ -153,7 +217,8 @@ export default function DashboardPage() {
           <div className="flex gap-8 mb-8 border-b border-gray-700 pb-4">
             {[
               { key: "upcoming", label: "Upcoming Bookings" },
-              { key: "past", label: "Past Bookings" },
+              { key: "completed", label: "Completed Bookings" },
+              { key: "cancelled", label: "Cancelled Bookings" },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -179,15 +244,13 @@ export default function DashboardPage() {
               <div className="text-center py-12">
                 <p className="text-red-400">{error}</p>
               </div>
-            ) : (activeTab === "upcoming" ? upcomingBookings : pastBookings).length === 0 ? (
+            ) : visibleBookings.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg mb-6">No {activeTab} bookings yet</p>
-                <Link href="/dashboard/booking/turfs" className="cta-primary px-8 py-3 rounded-lg font-black text-black inline-block">
-                  BOOK NOW
-                </Link>
+                <p className="text-gray-500 text-lg">No {activeTab} bookings yet</p>
+                {activeTab === "upcoming" && <Link href="/dashboard/booking/turfs" className="cta-primary mt-6 inline-block rounded-lg px-8 py-3 font-black text-black">BOOK NOW</Link>}
               </div>
             ) : (
-              (activeTab === "upcoming" ? upcomingBookings : pastBookings).map(booking => (
+              visibleBookings.map(booking => (
                 <div key={booking.id} className="booking-card glass p-6 rounded-lg">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex-1">
@@ -215,12 +278,12 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <p className="text-2xl font-black text-white mb-3">₹{booking.price}</p>
                       <div className="space-x-2">
-                        <button className="px-4 py-2 border border-gray-600 rounded-lg hover:border-white transition-all text-sm font-bold">
+                        <Link href={`/dashboard/bookings/${encodeURIComponent(booking.id)}`} className="inline-block px-4 py-2 border border-gray-600 rounded-lg hover:border-white transition-all text-sm font-bold">
                           View Details
-                        </button>
-                        {booking.status !== "completed" && (
-                          <button className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all text-sm font-bold">
-                            Cancel
+                        </Link>
+                        {["pending", "confirmed"].includes(booking.status) && (
+                          <button disabled={cancellingId === booking.id} onClick={() => void handleCancelBooking(booking.id)} className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-all text-sm font-bold disabled:opacity-50">
+                            {cancellingId === booking.id ? "Cancelling…" : "Cancel"}
                           </button>
                         )}
                       </div>
@@ -232,19 +295,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-12 grid md:grid-cols-2 gap-6">
-          <Link href="#" className="glass p-8 rounded-xl hover:border-white/40 transition-all">
-            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-2xl font-black mb-2">Edit Profile</h3>
-            <p className="text-gray-400 mb-4">Update your personal information and preferences</p>
-            <span className="text-white font-bold">Edit Now →</span>
-          </Link>
-          <Link href="#" className="glass p-8 rounded-xl hover:border-white/40 transition-all">
-            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-2xl font-black mb-2">Payment Methods</h3>
-            <p className="text-gray-400 mb-4">Manage your saved cards and payment options</p>
-            <span className="text-white font-bold">Manage →</span>
-          </Link>
-        </div>
+
       </div>
     </div>
   );

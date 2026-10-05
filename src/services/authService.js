@@ -13,6 +13,16 @@ const safeJsonParse = (value) => {
   }
 };
 
+const persistUserSession = (responseData) => {
+  const payload = responseData.data || responseData.result || responseData;
+  const token = responseData.token || responseData.accessToken || payload.token || payload.accessToken;
+  const refreshToken = responseData.refreshToken || payload.refreshToken;
+  const user = responseData.user || payload.user;
+  if (token) localStorage.setItem('token', token);
+  if (refreshToken) localStorage.setItem('userRefreshToken', refreshToken);
+  if (user) localStorage.setItem('user', JSON.stringify(user));
+};
+
 export const userSignup = async (name, email, password, contactNumber, address) => {
   try {
     const response = await fetch(buildApiUrl('/user/auth/signup'), {
@@ -31,8 +41,7 @@ export const userSignup = async (name, email, password, contactNumber, address) 
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      persistUserSession(data);
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -57,14 +66,31 @@ export const userLogin = async (email, password) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      persistUserSession(data);
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
     }
   } catch (error) {
     return { success: false, message: error.message };
+  }
+};
+
+export const refreshUserToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('userRefreshToken');
+    if (!refreshToken) return { success: false, message: 'No refresh token is available. Please sign in again.' };
+    const response = await fetch(buildApiUrl('/users/refresh-token'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    const data = await response.json();
+    if (!response.ok) return { success: false, message: data.message || 'Could not refresh your session.' };
+    persistUserSession(data);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, message: error.message || 'Could not refresh your session.' };
   }
 };
 
@@ -104,7 +130,11 @@ export const updateUserProfile = async (profileData) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const updatedUser = data.user || data.data?.user || data.data || {
+        ...safeJsonParse(localStorage.getItem('user')),
+        ...profileData,
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -212,6 +242,25 @@ export const adminLogin = async (email, password) => {
   } catch (error) {
     return { success: false, message: error.message };
   }
+};
+
+// Use the same login form for both account types and route by the account that authenticates.
+export const loginByRole = async (email, password) => {
+  const userResult = await userLogin(email, password);
+  if (userResult.success) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('admin');
+    return { ...userResult, role: 'user' };
+  }
+
+  const adminResult = await adminLogin(email, password);
+  if (adminResult.success) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return { ...adminResult, role: 'admin' };
+  }
+
+  return { success: false, message: userResult.message || adminResult.message || 'Invalid email or password.' };
 };
 
 export const getAdminProfile = async () => {
@@ -408,6 +457,7 @@ export const changeBusinessPassword = async (currentPassword, newPassword) => {
 // Logout
 export const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('userRefreshToken');
   localStorage.removeItem('user');
   localStorage.removeItem('adminToken');
   localStorage.removeItem('admin');

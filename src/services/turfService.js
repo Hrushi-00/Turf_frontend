@@ -1,8 +1,39 @@
 // Turf API Service
 import { buildApiUrl } from "./apiConfig";
+import { apiRequest } from "./apiClient";
 
 const PUBLIC_TURF_BASE_URL = buildApiUrl("/turfs");
 const ADMIN_TURF_BASE_URL = buildApiUrl("/admin/turfs");
+
+const extractRecords = (payload, keys) => {
+  const result = payload?.data ?? payload;
+  if (Array.isArray(result)) return { rows: result, pagination: null };
+  for (const key of keys) {
+    if (Array.isArray(result?.[key])) return { rows: result[key], pagination: result.pagination || result.meta || null };
+  }
+  return { rows: [], pagination: result?.pagination || result?.meta || null };
+};
+
+const normalizeCatalogItem = (item, type) => {
+  const isVenue = type === "venue";
+  const sportNames = item.turfDetails?.sportsAvailable || item.sportsAvailable || item.sportSlugs || item.sports || [];
+  const firstSport = sportNames[0];
+  return {
+    ...item,
+    id: item._id || item.id,
+    name: item.turfDetails?.turfName || item.name || item.venue?.name || "Sports venue",
+    sport: typeof firstSport === "string" ? firstSport : firstSport?.name || "Sports",
+    sportsAvailable: sportNames,
+    location: item.location?.city || item.city || item.address?.city || "Location unavailable",
+    address: item.location?.address || item.address || "",
+    price: item.pricing?.weekdayRate ?? item.pricing?.minPrice ?? item.price ?? 0,
+    image: item.gallery?.mainImage || item.media?.[0]?.url || item.media?.[0] || "",
+    description: item.turfDetails?.description || item.description || "",
+    available: item.availableSlots ?? item.available ?? 0,
+    slots: item.availability ? `${item.availability.openingTime || ""}-${item.availability.closingTime || ""}` : "",
+    kind: isVenue ? "venue" : "turf",
+  };
+};
 
 export const getTurfById = async (id) => {
   try {
@@ -54,47 +85,24 @@ export const getApprovedTurfs = async () => {
 };
 
 export const searchTurfs = async (filters = {}) => {
-  try {
-    const queryParams = new URLSearchParams();
+  const result = await apiRequest("/turfs", { query: filters });
+  if (!result.success) return result;
+  const { rows, pagination } = extractRecords(result.data, ["turfs", "items", "results"]);
+  return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "turf")), pagination };
+};
 
-    if (filters.city) queryParams.append("city", filters.city);
-    if (filters.sport) queryParams.append("sport", filters.sport);
-    if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
-    if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
-    if (filters.sortBy) queryParams.append("sortBy", filters.sortBy);
+export const searchNearbyTurfs = async (filters = {}) => {
+  const result = await apiRequest("/turfs/nearby", { query: filters });
+  if (!result.success) return result;
+  const { rows, pagination } = extractRecords(result.data, ["turfs", "items", "results"]);
+  return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "turf")), pagination };
+};
 
-    const url = `${PUBLIC_TURF_BASE_URL}/approved/list?${queryParams.toString()}`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (response.ok) {
-      const turfs = Array.isArray(data) ? data : data.data || [];
-      const transformed = turfs.map((turf) => ({
-        id: turf._id,
-        name: turf.turfDetails.turfName,
-        sport: turf.turfDetails.sportsAvailable?.[0] || "Sports",
-        location: turf.location.city,
-        price: turf.pricing.weekdayRate,
-        rating: 4.5,
-        slots: `${turf.availability.openingTime}-${turf.availability.closingTime}`,
-        image: turf.gallery.mainImage,
-        available: 5,
-        description: turf.turfDetails.description,
-        capacity: turf.turfDetails.capacity,
-        sportsAvailable: turf.turfDetails.sportsAvailable,
-        address: turf.location.address,
-        weekdayRate: turf.pricing.weekdayRate,
-        weekendRate: turf.pricing.weekendRate,
-        amenities: turf.amenities,
-        thumbnailImages: turf.gallery.thumbnailImages,
-      }));
-      return { success: true, data: transformed };
-    } else {
-      return { success: false, message: data.message };
-    }
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+export const searchVenues = async (filters = {}) => {
+  const result = await apiRequest("/venues", { query: filters });
+  if (!result.success) return result;
+  const { rows, pagination } = extractRecords(result.data, ["venues", "items", "results"]);
+  return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "venue")), pagination };
 };
 
 export const addTurf = async (turfData) => {

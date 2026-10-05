@@ -64,7 +64,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-12 overflow-hidden">
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-black px-6 pb-12 pt-28 text-white sm:pt-32">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
 
@@ -98,16 +98,12 @@ export default function RegisterPage() {
         }
       `}</style>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-black to-black"/>
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-white/3 blur-3xl pointer-events-none"/>
-      <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-white/2 blur-3xl pointer-events-none"/>
+      <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-black to-black"/>
+      <div className="pointer-events-none absolute right-0 top-1/4 z-0 h-96 w-96 bg-white/3 blur-3xl"/>
+      <div className="pointer-events-none absolute bottom-1/4 left-0 z-0 h-96 w-96 bg-white/2 blur-3xl"/>
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-black font-black text-xl">T</div>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-2xl tracking-wider text-white">TURFBOOK</span>
-          </Link>
+      <div className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-white/10 bg-[#0b0b0b]/95 p-6 shadow-2xl sm:p-8">
+        <div className="mb-8 text-center">
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-4xl tracking-wide mb-2">Join the Game</h1>
           <p className="text-gray-400">Create your account and start booking turfs today</p>
         </div>
@@ -242,6 +238,6 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }

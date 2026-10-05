@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { userLogin } from "@/src/services/authService";
+import { loginByRole } from "@/src/services/authService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,12 +19,13 @@ export default function LoginPage() {
     setSuccess("");
     setLoading(true);
 
-    const result = await userLogin(email, password);
+    const result = await loginByRole(email, password);
 
     if (result.success) {
       setSuccess("Login successful! Redirecting...");
+      const role = "role" in result ? result.role : "user";
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(role === "admin" ? "/admin" : "/dashboard");
       }, 1500);
     } else {
       setError(result.message || "Login failed. Please try again.");
@@ -34,7 +35,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 py-12 overflow-hidden">
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-black px-6 pb-12 pt-28 text-white sm:pt-32">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
 
@@ -69,19 +70,15 @@ export default function LoginPage() {
       `}</style>
 
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-black to-black"/>
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-white/3 blur-3xl pointer-events-none"/>
-      <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-white/2 blur-3xl pointer-events-none"/>
+      <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-black to-black"/>
+      <div className="pointer-events-none absolute right-0 top-1/4 z-0 h-96 w-96 bg-white/3 blur-3xl"/>
+      <div className="pointer-events-none absolute bottom-1/4 left-0 z-0 h-96 w-96 bg-white/2 blur-3xl"/>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-white/10 bg-[#0b0b0b]/95 p-6 shadow-2xl sm:p-8">
         {/* Header */}
-        <div className="text-center mb-10">
-          <Link href="/" className="inline-flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-black font-black text-xl">T</div>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-2xl tracking-wider text-white">TURFBOOK</span>
-          </Link>
+        <div className="mb-8 text-center">
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-4xl tracking-wide mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to book your perfect game</p>
+          <p className="text-gray-400">Sign in to continue to your account</p>
         </div>
 
         {/* Error Message */}
@@ -178,6 +175,6 @@ export default function LoginPage() {
           <p>By signing in, you agree to our <Link href="#" className="text-white hover:text-gray-300">Terms</Link> and <Link href="#" className="text-white hover:text-gray-300">Privacy Policy</Link></p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
