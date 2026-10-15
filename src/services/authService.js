@@ -42,6 +42,10 @@ export const userSignup = async (name, email, password, contactNumber, address) 
     const data = await response.json();
     if (response.ok) {
       persistUserSession(data);
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('admin');
+      localStorage.removeItem('businessToken');
+      localStorage.removeItem('business');
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -67,6 +71,10 @@ export const userLogin = async (email, password) => {
     const data = await response.json();
     if (response.ok) {
       persistUserSession(data);
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('admin');
+      localStorage.removeItem('businessToken');
+      localStorage.removeItem('business');
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -191,12 +199,13 @@ export const deleteUserAccount = async () => {
 };
 
 // Admin Authentication
-export const adminRegister = async (username, email, password) => {
+export const adminRegister = async (username, email, password, registrationKey) => {
   try {
     const response = await fetch(buildApiUrl('/admin/auth/register'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-admin-registration-key': registrationKey,
       },
       body: JSON.stringify({
         username,
@@ -208,7 +217,12 @@ export const adminRegister = async (username, email, password) => {
     const data = await response.json();
     if (response.ok) {
       localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('admin', JSON.stringify(data.user));
+      localStorage.setItem('admin', JSON.stringify(data.user || data.admin));
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRefreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('businessToken');
+      localStorage.removeItem('business');
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -234,7 +248,12 @@ export const adminLogin = async (email, password) => {
     const data = await response.json();
     if (response.ok) {
       localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('admin', JSON.stringify(data.user));
+      localStorage.setItem('admin', JSON.stringify(data.user || data.admin));
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRefreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('businessToken');
+      localStorage.removeItem('business');
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -244,23 +263,21 @@ export const adminLogin = async (email, password) => {
   }
 };
 
-// Use the same login form for both account types and route by the account that authenticates.
+// Try each role-specific auth endpoint so the shared login form needs no role selector.
 export const loginByRole = async (email, password) => {
-  const userResult = await userLogin(email, password);
-  if (userResult.success) {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('admin');
-    return { ...userResult, role: 'user' };
-  }
-
   const adminResult = await adminLogin(email, password);
-  if (adminResult.success) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return { ...adminResult, role: 'admin' };
-  }
+  if (adminResult.success) return { ...adminResult, role: 'admin' };
 
-  return { success: false, message: userResult.message || adminResult.message || 'Invalid email or password.' };
+  const businessResult = await businessLogin(email, password);
+  if (businessResult.success) return { ...businessResult, role: 'business' };
+
+  const userResult = await userLogin(email, password);
+  if (userResult.success) return { ...userResult, role: 'user' };
+
+  return {
+    success: false,
+    message: 'Unable to sign in with these credentials. Check your email and password, then try again.',
+  };
 };
 
 export const getAdminProfile = async () => {
@@ -299,7 +316,7 @@ export const updateAdminProfile = async (profileData) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('admin', JSON.stringify(data.user));
+      localStorage.setItem('admin', JSON.stringify(data.user || data.admin));
       return { success: true, data };
     } else {
       return { success: false, message: data.message };
@@ -332,6 +349,17 @@ export const changeAdminPassword = async (currentPassword, newPassword) => {
   }
 };
 
+const persistBusinessSession = (responseData) => {
+  const payload = responseData?.data || responseData?.result || responseData;
+  const token = responseData?.token || responseData?.accessToken || payload?.token || payload?.accessToken;
+  const business = responseData?.business || responseData?.businessUser || payload?.business || payload?.businessUser || responseData?.user || payload?.user;
+
+  if (token) localStorage.setItem('businessToken', token);
+  if (business) localStorage.setItem('business', JSON.stringify(business));
+
+  return { token, business };
+};
+
 export const businessSignup = async (username, email, password) => {
   try {
     const response = await fetch(buildApiUrl('/business/auth/signup'), {
@@ -348,12 +376,12 @@ export const businessSignup = async (username, email, password) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('businessToken', data.token);
-      localStorage.setItem('business', JSON.stringify(data.user));
+      const session = persistBusinessSession(data);
+      if (!session.token) return { success: false, message: 'Account was created, but the API did not return an access token. Please contact support before trying again.' };
       return { success: true, data };
     }
 
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || data.error, data };
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -374,12 +402,17 @@ export const businessLogin = async (email, password) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('businessToken', data.token);
-      localStorage.setItem('business', JSON.stringify(data.user));
+      const session = persistBusinessSession(data);
+      if (!session.token) return { success: false, message: 'Login succeeded, but the API did not return an access token.' };
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRefreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('admin');
       return { success: true, data };
     }
 
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || data.error, data };
   } catch (error) {
     return { success: false, message: error.message };
   }

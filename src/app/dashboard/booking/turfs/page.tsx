@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { searchNearbyTurfs, searchTurfs, searchVenues } from "@/src/services/turfService";
+import { TurfCardSkeleton } from "../../../components/Skeleton";
+import { searchNearbyTurfs, searchTurfs } from "@/src/services/turfService";
 
 type CatalogItem = {
   id: string;
@@ -21,7 +22,6 @@ type CatalogItem = {
 };
 
 export default function BookingTurfsPage() {
-  const [catalog, setCatalog] = useState<"turfs" | "venues">("turfs");
   const [sport, setSport] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
   const [draft, setDraft] = useState({ q: "", city: "", minPrice: "", maxPrice: "" });
@@ -63,16 +63,14 @@ export default function BookingTurfsPage() {
 
   useEffect(() => {
     let active = true;
-    if (nearbyMode && (!coordinates || catalog !== "turfs")) return () => { active = false; };
+    if (nearbyMode && !coordinates) return () => { active = false; };
     setLoading(true);
     setError("");
     const pageSize = nearbyMode ? 20 : 10;
     const query = { ...filters, page, limit: pageSize };
-    const request = catalog === "turfs"
-      ? nearbyMode
-        ? searchNearbyTurfs({ ...coordinates, radiusKm, page, limit: 20 })
-        : searchTurfs(query)
-      : searchVenues({ city: filters.city, sport: filters.sport, page, limit: 10 });
+    const request = nearbyMode
+      ? searchNearbyTurfs({ ...coordinates, radiusKm, page, limit: 20 })
+      : searchTurfs(query);
 
     request.then((result) => {
       if (!active) return;
@@ -83,14 +81,14 @@ export default function BookingTurfsPage() {
       } else {
         setItems([]);
         setHasNextPage(false);
-        setError(result.message || `Could not load ${catalog}.`);
+        setError(result.message || "Could not load turfs.");
       }
     }).catch((requestError) => {
-      if (active) setError(requestError instanceof Error ? requestError.message : `Could not load ${catalog}.`);
+      if (active) setError(requestError instanceof Error ? requestError.message : "Could not load turfs.");
     }).finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [catalog, filters, page, refreshKey, nearbyMode, coordinates, radiusKm]);
+  }, [filters, page, refreshKey, nearbyMode, coordinates, radiusKm]);
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -150,24 +148,18 @@ export default function BookingTurfsPage() {
         <header className="mb-10">
           <p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">Explore</p>
           <h1 className="mt-2 text-5xl font-black">Find a sports venue</h1>
-          <p className="mt-2 text-gray-400">Search turfs by name, city, sport and budget, or find venues by city and sport.</p>
+          <p className="mt-2 text-gray-400">Search turfs by name, city, sport and budget, or find nearby turfs.</p>
         </header>
 
         <section className="mb-10 rounded-2xl border border-white/10 bg-white/[.04] p-5 md:p-7">
-          <div className="mb-6 flex gap-2">
-            {(["turfs", "venues"] as const).map((value) => (
-              <button key={value} onClick={() => { setCatalog(value); setNearbyMode(false); setPage(1); }} className={`rounded-lg px-5 py-2.5 text-sm font-bold capitalize ${catalog === value ? "bg-white text-black" : "border border-gray-700 text-gray-300 hover:border-white/40"}`}>{value}</button>
-            ))}
-          </div>
-
           <form onSubmit={applyFilters} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {catalog === "turfs" && <label className="text-sm font-semibold text-gray-300">Search<input value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} placeholder="Football, arena…" className={inputClass} /></label>}
+            <label className="text-sm font-semibold text-gray-300">Search<input value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} placeholder="Football, arena…" className={inputClass} /></label>
             <label className="text-sm font-semibold text-gray-300">City<input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="Pune" className={inputClass} /></label>
-            {catalog === "turfs" && <>
+            <>
               <label className="text-sm font-semibold text-gray-300">Minimum price<input type="number" min="0" value={draft.minPrice} onChange={(e) => setDraft({ ...draft, minPrice: e.target.value })} placeholder="500" className={inputClass} /></label>
               <label className="text-sm font-semibold text-gray-300">Maximum price<input type="number" min="0" value={draft.maxPrice} onChange={(e) => setDraft({ ...draft, maxPrice: e.target.value })} placeholder="1500" className={inputClass} /></label>
-            </>}
-            <div className="flex items-end"><button className="w-full rounded-lg bg-lime-300 px-5 py-3 font-black text-black hover:bg-lime-200">Search {catalog}</button></div>
+            </>
+            <div className="flex items-end"><button className="w-full rounded-lg bg-lime-300 px-5 py-3 font-black text-black hover:bg-lime-200">Search turfs</button></div>
           </form>
 
           <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -182,29 +174,29 @@ export default function BookingTurfsPage() {
             </label>
           </div>
 
-          {catalog === "turfs" && <div className="mt-6 flex flex-wrap items-end gap-3 border-t border-white/10 pt-5">
+          <div className="mt-6 flex flex-wrap items-end gap-3 border-t border-white/10 pt-5">
             <label className="text-sm font-semibold text-gray-300">Nearby radius (1–100 km)
               <input type="number" min="1" max="100" value={radiusKm} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (Number.isFinite(value)) setRadiusKm(Math.min(100, Math.max(1, value))); }} className={`${inputClass} w-36`} />
             </label>
             <button type="button" disabled={locating} onClick={findNearbyTurfs} className="rounded-lg border border-lime-300/60 px-5 py-3 font-bold text-lime-200 hover:bg-lime-300/10 disabled:opacity-50">{locating ? "Getting location…" : "Use my location"}</button>
             {nearbyMode && <button type="button" onClick={() => { setNearbyMode(false); setPage(1); }} className="px-3 py-3 text-sm text-gray-400 hover:text-white">Clear nearby search</button>}
-          </div>}
+          </div>
         </section>
 
-        <div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-bold capitalize">{nearbyMode ? "Turfs near you" : catalog}</h2><span className="text-sm text-gray-500">Page {page} · {nearbyMode ? 20 : 10} per page{nearbyMode ? ` · within ${radiusKm} km` : ""}</span></div>
-        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {loading ? <p className="col-span-full py-16 text-center text-gray-400">Searching {catalog}…</p>
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-bold">{nearbyMode ? "Turfs near you" : "Turfs"}</h2><span className="text-sm text-gray-500">Page {page} · {nearbyMode ? 20 : 10} per page{nearbyMode ? ` · within ${radiusKm} km` : ""}</span></div>
+        <section className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {loading ? Array.from({ length: 6 }, (_, index) => <TurfCardSkeleton key={index} />)
             : error ? <div className="col-span-full py-12 text-center"><p className="text-red-300">{error}</p><button onClick={() => setRefreshKey((current) => current + 1)} className="mt-4 rounded-lg border border-white/20 px-5 py-2">Retry</button></div>
-              : sortedItems.length === 0 ? <p className="col-span-full py-16 text-center text-gray-400">{nearbyMode ? "No nearby turfs found. Some venues may not have map coordinates yet." : `No ${catalog} match those filters.`}</p>
-                : sortedItems.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.04] transition hover:-translate-y-1 hover:border-white/25">
-                  {catalog === "turfs" ? <Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} aria-label={`View details for ${item.name}`} className="block">
+              : sortedItems.length === 0 ? <p className="col-span-full py-16 text-center text-gray-400">{nearbyMode ? "No nearby turfs found. Some turfs may not have map coordinates yet." : "No turfs match those filters."}</p>
+                : sortedItems.map((item) => <article key={item.id} className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[.04] transition hover:-translate-y-1 hover:border-white/25">
+                  <Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} aria-label={`View details for ${item.name}`} className="block">
                     <div className="relative h-48 bg-gradient-to-br from-lime-950 to-zinc-900">{item.image && <img src={item.image} alt={item.name} className="h-full w-full object-cover" />}<span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">{item.available ? `${item.available} slots` : "SPORTS TURF"}</span></div>
-                  </Link> : <div className="relative h-48 bg-gradient-to-br from-lime-950 to-zinc-900">{item.image && <img src={item.image} alt={item.name} className="h-full w-full object-cover" />}<span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">VENUE</span></div>}
-                  <div className="p-6">{catalog === "turfs" ? <Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} className="text-xl font-bold hover:text-lime-200">{item.name}</Link> : <h3 className="text-xl font-bold">{item.name}</h3>}<p className="mt-1 text-sm text-gray-400">{item.location} · {item.sport}</p>{nearbyMode && typeof item.distanceKm === "number" && <p className="mt-2 text-sm font-bold text-lime-300">{item.distanceKm.toFixed(1)} km away</p>}{item.address && <p className="mt-2 line-clamp-2 text-xs text-gray-500">{typeof item.address === "string" ? item.address : [item.address.street, item.address.city].filter(Boolean).join(", ")}</p>}
+                  </Link>
+                  <div className="min-w-0 p-6"><Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} className="break-words text-xl font-bold hover:text-lime-200">{item.name}</Link><p className="mt-1 text-sm text-gray-400">{item.location} · {item.sport}</p>{nearbyMode && typeof item.distanceKm === "number" && <p className="mt-2 text-sm font-bold text-lime-300">{item.distanceKm.toFixed(1)} km away</p>}{item.address && <p className="mt-2 line-clamp-2 text-xs text-gray-500">{typeof item.address === "string" ? item.address : [item.address.street, item.address.city].filter(Boolean).join(", ")}</p>}
                     {item.description && <p className="mt-3 line-clamp-2 text-sm text-gray-400">{item.description}</p>}
-                    {catalog === "turfs" && <div className="my-5"><p className="text-2xl font-black">₹{item.price}<span className="ml-2 text-xs font-normal text-gray-500">per hour</span></p>{item.slots && <p className="mt-1 text-xs text-gray-500">{item.slots}</p>}</div>}
-                    {catalog === "turfs" && <Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} className="mb-3 block rounded-lg border border-white/20 py-3 text-center text-sm font-bold text-white hover:border-lime-300">VIEW DETAILS</Link>}
-                    {catalog === "turfs" && <Link href={`/dashboard/booking?turf=${encodeURIComponent(item.id)}`} className="block rounded-lg bg-white py-3 text-center font-black text-black">BOOK NOW</Link>}
+                    <div className="my-5"><p className="text-2xl font-black">₹{item.price}<span className="ml-2 text-xs font-normal text-gray-500">per hour</span></p>{item.slots && <p className="mt-1 text-xs text-gray-500">{item.slots}</p>}</div>
+                    <Link href={`/dashboard/booking/turfs/${encodeURIComponent(item.id)}`} className="mb-3 block rounded-lg border border-white/20 py-3 text-center text-sm font-bold text-white hover:border-lime-300">VIEW DETAILS</Link>
+                    <Link href={`/dashboard/booking?turf=${encodeURIComponent(item.id)}`} className="block rounded-lg bg-white py-3 text-center font-black text-black">BOOK NOW</Link>
                   </div>
                 </article>)}
         </section>

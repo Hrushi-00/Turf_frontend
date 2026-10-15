@@ -2,6 +2,13 @@ import { buildApiUrl } from "./apiConfig";
 
 const tokenKeys = { user: "token", business: "businessToken", admin: "adminToken" };
 
+function getErrorMessage(payload, fallback) {
+  if (Array.isArray(payload?.errors) && payload.errors.length) {
+    return payload.errors.map((error) => [error.field, error.message].filter(Boolean).join(": ")).join("\n");
+  }
+  return payload?.message || payload?.error || fallback;
+}
+
 export async function apiRequest(path, { method = "GET", role, body, query, headers = {}, signal, idempotent = false, root = false } = {}) {
   if (root && !process.env.APP_URL) return { success: false, message: "Missing API base URL. Set APP_URL in .env.local." };
   const requestUrl = root
@@ -29,7 +36,7 @@ export async function apiRequest(path, { method = "GET", role, body, query, head
       signal,
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) return { success: false, status: response.status, message: payload.message || payload.error || `Request failed (${response.status})`, data: payload };
+    if (!response.ok) return { success: false, status: response.status, message: getErrorMessage(payload, `Request failed (${response.status})`), data: payload };
     return { success: true, status: response.status, data: payload.data ?? payload };
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Network request failed." };

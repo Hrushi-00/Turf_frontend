@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginByRole } from "@/src/services/authService";
+import { getBusinessOnboardingResumePath } from "@/src/services/businessOnboarding";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -24,9 +25,12 @@ export default function LoginPage() {
     if (result.success) {
       setSuccess("Login successful! Redirecting...");
       const role = "role" in result ? result.role : "user";
-      setTimeout(() => {
-        router.push(role === "admin" ? "/admin" : "/dashboard");
-      }, 1500);
+      const destination = role === "admin"
+        ? "/admin"
+        : role === "business"
+          ? getBusinessOnboardingResumePath(email)
+          : "/dashboard";
+      setTimeout(() => router.push(destination), 500);
     } else {
       setError(result.message || "Login failed. Please try again.");
     }
@@ -142,32 +146,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center gap-4 my-8">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"/>
-          <span className="text-gray-500 text-sm">OR</span>
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"/>
-        </div>
-
-        {/* Social Login */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { name: "Google" },
-            { name: "Facebook" },
-            { name: "Apple" },
-          ].map(s => (
-            <button key={s.name} className="glass px-4 py-3 rounded-lg hover:border-white/40 transition-all text-center">
-              <span className="text-xl">{s.name.charAt(0)}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Signup Link */}
         <p className="text-center mt-8 text-gray-400">
-          Don't have an account?{" "}
-          <Link href="/auth/register" className="text-white font-bold hover:text-gray-300 transition-colors">
-            Sign up now
-          </Link>
+          Don&apos;t have an account?{" "}
+          <Link href="/auth/register" className="text-white font-bold hover:text-gray-300 transition-colors">Sign up now</Link>
+        </p>
+        <p className="mt-3 text-center text-sm text-gray-500">
+          Business owner? <Link href="/business/register" className="font-semibold text-white hover:text-gray-300">List your turf</Link>
         </p>
 
         {/* Footer */}

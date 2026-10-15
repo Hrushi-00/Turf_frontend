@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState, useEffect } from "react";
+import { BookingCardSkeleton } from "../components/Skeleton";
 import { getCurrentUser, updateUserProfile } from "@/src/services/authService";
 import { cancelBooking, getUserBookings } from "@/src/services/bookingService";
 
@@ -255,9 +256,7 @@ export default function DashboardPage() {
           {/* Bookings List */}
           <div className="space-y-4">
             {loading ? (
-              <div className="text-center py-12">
-                <p className="text-gray-400">Loading bookings...</p>
-              </div>
+              Array.from({ length: 3 }, (_, index) => <BookingCardSkeleton key={index} />)
             ) : error ? (
               <div className="text-center py-12">
                 <p className="text-red-400">{error}</p>

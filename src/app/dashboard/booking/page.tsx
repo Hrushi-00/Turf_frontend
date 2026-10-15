@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { getTurfById } from "@/src/services/turfService";
 import { createBooking, createBookingPaymentOrder, getTurfAvailability, verifyBookingPayment } from "@/src/services/bookingService";
 import { platformApi } from "@/src/services/platformService";
+import { Skeleton } from "../../components/Skeleton";
 
 type Turf = {
   _id?: string;
@@ -218,10 +219,10 @@ function BookingContent() {
           <section className="w-full min-w-0 space-y-4 sm:space-y-6">
             <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]">
               <div className="grid min-w-0 sm:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]">
-                {turf?.gallery?.mainImage ? <img src={turf.gallery.mainImage} alt={turfName} className="h-44 w-full object-cover sm:h-full sm:min-h-48" /> : <div className="h-44 bg-linear-to-br from-lime-950 to-zinc-900 sm:h-full sm:min-h-48" />}
+                {turf?.gallery?.mainImage ? <img src={turf.gallery.mainImage} alt={turfName} className="h-44 w-full object-cover sm:h-full sm:min-h-48" /> : <div className="h-44   rom-lime-950 to-zinc-900 sm:h-full sm:min-h-48" />}
                 <div className="min-w-0 p-4 sm:p-5 md:p-7">
                   <p className="text-sm text-zinc-400">Selected venue</p>
-                  <h2 className="mt-1 wrap-break-word text-xl font-bold sm:text-2xl">{loadingTurf ? "Loading venue…" : turfName}</h2>
+                  <h2 className="mt-1 wrap-break-word text-xl font-bold sm:text-2xl">{loadingTurf ? <Skeleton className="h-7 w-2/3" /> : turfName}</h2>
                   <p className="mt-1 text-sm text-zinc-400">{sport}{turf?.location?.city ? ` · ${turf.location.city}` : ""}</p>
                   <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="text-amber-300" aria-label={rating ? `${rating.toFixed(1)} out of 5 stars` : "No rating yet"}>★★★★★</span><strong>{rating ? rating.toFixed(1) : "New"}</strong><span className="text-zinc-500">{reviewCount ? `(${reviewCount} reviews)` : "· No reviews yet"}</span></p>
                   {turf?.turfDetails?.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-zinc-300">{turf.turfDetails.description}</p>}
@@ -236,7 +237,7 @@ function BookingContent() {
             </div>
             <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5 md:p-8">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2"><h2 className="text-base font-bold sm:text-lg">2. Choose an available time</h2><button onClick={loadSlots} className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-lime-300 hover:bg-lime-300/10">Refresh</button></div>
-              {loadingSlots ? <p className="text-zinc-400">Checking live availability…</p> : slots.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{slots.map((slot, index) => { const label = slotLabel(slot); return <button key={`${label}-${index}`} onClick={() => setSelectedSlot(label)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${selectedSlot === label ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 text-zinc-200 hover:border-lime-300/60"}`}>{label}</button>; })}</div> : <p className="text-zinc-400">No bookable times for this date. The venue may be closed, outside its operating hours, fully booked, or missing its schedule. Try another date or refresh.</p>}
+              {loadingSlots ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Checking availability">{Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-12" />)}</div> : slots.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{slots.map((slot, index) => { const label = slotLabel(slot); return <button key={`${label}-${index}`} onClick={() => setSelectedSlot(label)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${selectedSlot === label ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 text-zinc-200 hover:border-lime-300/60"}`}>{label}</button>; })}</div> : <p className="text-zinc-400">No bookable times for this date. The venue may be closed, outside its operating hours, fully booked, or missing its schedule. Try another date or refresh.</p>}
             </div>
           </section>
           <aside className="h-fit w-full max-w-full min-w-0 wrap-break-word rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-6 lg:sticky lg:top-24">

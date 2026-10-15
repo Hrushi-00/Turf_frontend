@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { TurfCardSkeleton } from "./components/Skeleton";
 import Link from "next/link";
 import { getApprovedTurfs } from "@/src/services/turfService";
 
@@ -140,9 +142,12 @@ export default function Home() {
         {/* Background image with overlay */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-black/25 to-slate-900/60"/>
-          <img
+          <Image
             src="https://static.vecteezy.com/system/resources/thumbnails/051/434/372/small/football-field-at-night-with-illuminated-goalposts-and-fresh-green-turf-under-stadium-lights-photo.jpeg"
             alt="Football field at night"
+            fill
+            priority
+            sizes="100vw"
             className="w-full h-full object-cover"
             style={{
               objectPosition: "center 38%",
@@ -171,13 +176,13 @@ export default function Home() {
           </p>
 
           <div className="au d4 flex flex-col sm:flex-row items-start gap-4 mb-12">
-            <a href="/dashboard" className="cta-primary text-base font-black text-black px-8 py-4 rounded-lg hover:shadow-2xl transition-all flex items-center gap-2">
+            <Link href="/dashboard" className="cta-primary text-base font-black text-black px-8 py-4 rounded-lg hover:shadow-2xl transition-all flex items-center gap-2">
               <span>BOOK NOW</span>
               <span className="text-xl">→</span>
-            </a>
-            <a href="/dashboard/booking/turfs" className="cta-secondary text-base font-bold px-8 py-4 rounded-lg">
+            </Link>
+            <Link href="/dashboard/booking/turfs" className="cta-secondary text-base font-bold px-8 py-4 rounded-lg">
               EXPLORE TURFS
-            </a>
+            </Link>
           </div>
 
           <div className="au d4 flex flex-wrap gap-3">
@@ -216,20 +221,20 @@ export default function Home() {
               { name: "Hockey", count: "18 turfs", image: "https://images.unsplash.com/photo-1752401978234-d2aff41b65c9?auto=format&fit=crop&w=900&q=85" },
               { name: "Boxing", count: "24 turfs", image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=900&q=85" },
             ].map((sport, i) => (
-              <a
+              <Link
                 key={sport.name}
                 href="/dashboard/booking/turfs"
                 className="au group relative flex h-56 flex-col justify-end overflow-hidden rounded-xl border border-gray-700 bg-black text-left transition-all duration-300 hover:border-white/50"
                 style={{ animationDelay: `${0.1 + i * 0.08}s` }}
               >
-                <img src={sport.image} alt={`${sport.name} players`} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <Image src={sport.image} alt={`${sport.name} players`} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/5" />
                 <div className="relative z-10 p-5">
                   <h3 className="heading mb-1 text-xl font-black">{sport.name}</h3>
                   <p className="text-sm text-gray-300">{sport.count}</p>
                   <span className="mt-3 inline-block text-xs font-bold text-lime-200 opacity-0 transition-opacity group-hover:opacity-100">Browse Now</span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -254,11 +259,11 @@ export default function Home() {
             </div>
           </div>
           <div className="relative min-h-[45vh] overflow-hidden border-t border-white/10 lg:min-h-screen lg:border-l lg:border-t-0">
-            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=90" alt="Football match on a lit sports field" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+            <Image src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=90" alt="Football match on a lit sports field" fill sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover transition-transform duration-700 hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-black/30" />
             <div aria-hidden="true" className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(115deg, transparent 49.7%, rgba(255,255,255,.8) 50%, transparent 50.3%), linear-gradient(0deg, transparent 49.7%, rgba(255,255,255,.45) 50%, transparent 50.3%)" }} />
             <div className="absolute bottom-6 right-6 w-36 overflow-hidden rounded-xl border border-white/30 bg-black shadow-2xl sm:bottom-8 sm:right-8 sm:w-48">
-              <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=500&q=85" alt="Basketball court" loading="lazy" className="h-24 w-full object-cover sm:h-32" />
+              <Image src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=500&q=85" alt="Basketball court" width={500} height={320} sizes="192px" className="h-24 w-full object-cover sm:h-32" />
               <p className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white sm:text-xs">Make it game day</p>
             </div>
             <div className="absolute left-6 top-6 flex items-center gap-2 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-[10px] font-black uppercase tracking-[.2em] text-white backdrop-blur sm:left-8 sm:top-8"><span className="h-2 w-2 animate-pulse rounded-full bg-lime-300" /> Made for game day</div>
@@ -289,20 +294,18 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {loading ? (
-              <div className="col-span-full text-center py-20">
-                <p className="text-gray-400 text-lg">Loading premium turfs...</p>
-              </div>
+              Array.from({ length: 6 }, (_, index) => <TurfCardSkeleton key={index} />)
             ) : filtered.length === 0 ? (
               <div className="col-span-full text-center py-20">
                 <p className="text-gray-400 text-lg">No turfs available for this sport</p>
               </div>
             ) : (
               filtered.map((t, i) => (
-                <article key={t.id} className={`au turf-card group bg-black/40 border border-gray-700 rounded-2xl overflow-hidden transition-all hover:border-white/40`} style={{ animationDelay: `${0.1 + i * 0.12}s` }}>
+                <article key={t.id} className="au turf-card group min-w-0 overflow-hidden rounded-2xl border border-gray-700 bg-black/40 transition-all hover:border-white/40" style={{ animationDelay: `${0.1 + i * 0.12}s` }}>
                   <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} aria-label={`View ${t.name} details`} className="card-image relative block h-48 overflow-hidden bg-gradient-to-br from-white/10 to-white/5">
-                    <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                    {t.image && <Image src={t.image} alt={t.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" unoptimized className="object-cover" />}
                     <div className="absolute inset-0 bg-black/40" />
                     {t.metaInfo?.isFeatured && (
                       <span className="absolute top-4 left-4 text-xs font-black px-4 py-1.5 rounded-full bg-white text-black">
@@ -316,9 +319,9 @@ export default function Home() {
                     )}
                   </Link>
                   <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
                       <div>
-                        <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} className="heading text-lg font-black mb-1 hover:text-lime-200">{t.name}</Link>
+                        <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} className="heading mb-1 block break-words text-lg font-black hover:text-lime-200">{t.name}</Link>
                         <p className="text-gray-500 text-sm">{t.location}</p>
                       </div>
                       <div className="text-right">
@@ -326,7 +329,7 @@ export default function Home() {
                         <p className="text-gray-500 text-xs">per hour</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 mb-6 pb-6 border-b border-gray-700">
+                    <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-gray-700 pb-6 text-xs text-gray-400">
                       <span>Rating: <span className="text-white font-bold">{t.rating || "N/A"}</span></span>
                       <span>·</span>
                       <span className="text-white font-bold">{t.sportsAvailable?.[0] || t.sport}</span>
@@ -346,9 +349,9 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-16">
-            <a href="/dashboard/booking/turfs" className="inline-flex items-center gap-2 text-sm font-black text-white border-2 border-white px-8 py-4 rounded-lg hover:bg-white/10 transition-all duration-200">
+            <Link href="/dashboard/booking/turfs" className="inline-flex items-center gap-2 text-sm font-black text-white border-2 border-white px-8 py-4 rounded-lg hover:bg-white/10 transition-all duration-200">
               LOAD MORE TURFS
-            </a>
+            </Link>
           </div>
         </div>
       </section>

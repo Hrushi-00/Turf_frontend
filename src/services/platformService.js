@@ -5,7 +5,7 @@ export const platformApi = {
   health: () => user("/health"),
   liveness: () => apiRequest("/health/live", { root: true }),
   readiness: () => apiRequest("/health/ready", { root: true }),
-  sports: (query) => user("/sports", { query }),
+  sports: (query, options = {}) => user("/sports", { query, ...options }),
   turfs: (query) => user("/turfs", { query }),
   nearbyTurfs: (query) => user("/turfs/nearby", { query }),
   featuredTurfs: (query) => user("/turfs/featured", { query }),

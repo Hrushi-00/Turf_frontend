@@ -8,7 +8,7 @@ const ADMIN_TURF_BASE_URL = buildApiUrl("/admin/turfs");
 const extractRecords = (payload, keys) => {
   const result = payload?.data ?? payload;
   if (Array.isArray(result)) return { rows: result, pagination: null };
-  for (const key of keys) {
+  for (const key of [...keys, "data"]) {
     if (Array.isArray(result?.[key])) return { rows: result[key], pagination: result.pagination || result.meta || null };
   }
   return { rows: [], pagination: result?.pagination || result?.meta || null };
@@ -51,29 +51,44 @@ export const getTurfById = async (id) => {
 
 export const getApprovedTurfs = async () => {
   try {
-    const response = await fetch(`${PUBLIC_TURF_BASE_URL}/approved/list`);
+    const approvedUrl = new URL(`${PUBLIC_TURF_BASE_URL}/approved/list`);
+    approvedUrl.searchParams.set("page", "1");
+    approvedUrl.searchParams.set("limit", "100");
+    const response = await fetch(approvedUrl.toString());
     const data = await response.json();
     if (response.ok) {
-      // Transform backend data to match frontend requirements
-      const turfs = Array.isArray(data) ? data : data.data || [];
+      // The API may return a raw array or a paginated/wrapped list.
+      const payload = data?.data ?? data;
+      const turfs = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.turfs)
+          ? payload.turfs
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload?.results)
+              ? payload.results
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : [];
       const transformed = turfs.map((turf) => ({
-        id: turf._id,
-        name: turf.turfDetails.turfName,
-        sport: turf.turfDetails.sportsAvailable?.[0] || "Sports",
-        location: turf.location.city,
-        price: turf.pricing.weekdayRate,
+        ...turf,
+        id: turf._id || turf.id,
+        name: turf.turfDetails?.turfName || turf.name || "Sports turf",
+        sport: turf.turfDetails?.sportsAvailable?.[0] || turf.sportsAvailable?.[0] || "Sports",
+        location: turf.location?.city || turf.city || "Location unavailable",
+        price: turf.pricing?.weekdayRate ?? turf.price ?? 0,
         rating: 4.5, // Will need to calculate from reviews
-        slots: `${turf.availability.openingTime}-${turf.availability.closingTime}`,
-        image: turf.gallery.mainImage,
+        slots: turf.availability ? `${turf.availability.openingTime || ""}-${turf.availability.closingTime || ""}` : "",
+        image: turf.gallery?.mainImage || turf.media?.[0]?.url || "",
         available: 5, // Will need to calculate from bookings
-        description: turf.turfDetails.description,
-        capacity: turf.turfDetails.capacity,
-        sportsAvailable: turf.turfDetails.sportsAvailable,
-        address: turf.location.address,
-        weekdayRate: turf.pricing.weekdayRate,
-        weekendRate: turf.pricing.weekendRate,
-        amenities: turf.amenities,
-        thumbnailImages: turf.gallery.thumbnailImages,
+        description: turf.turfDetails?.description || turf.description || "",
+        capacity: turf.turfDetails?.capacity,
+        sportsAvailable: turf.turfDetails?.sportsAvailable || turf.sportsAvailable || [],
+        address: turf.location?.address || turf.address || "",
+        weekdayRate: turf.pricing?.weekdayRate ?? turf.price ?? 0,
+        weekendRate: turf.pricing?.weekendRate ?? 0,
+        amenities: turf.amenities || [],
+        thumbnailImages: turf.gallery?.thumbnailImages || [],
       }));
       return { success: true, data: transformed };
     } else {
@@ -85,7 +100,7 @@ export const getApprovedTurfs = async () => {
 };
 
 export const searchTurfs = async (filters = {}) => {
-  const result = await apiRequest("/turfs", { query: filters });
+  const result = await apiRequest("/turfs/approved/list", { query: filters });
   if (!result.success) return result;
   const { rows, pagination } = extractRecords(result.data, ["turfs", "items", "results"]);
   return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "turf")), pagination };
@@ -98,23 +113,17 @@ export const searchNearbyTurfs = async (filters = {}) => {
   return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "turf")), pagination };
 };
 
-export const searchVenues = async (filters = {}) => {
-  const result = await apiRequest("/venues", { query: filters });
-  if (!result.success) return result;
-  const { rows, pagination } = extractRecords(result.data, ["venues", "items", "results"]);
-  return { ...result, data: rows.map((item) => normalizeCatalogItem(item, "venue")), pagination };
-};
-
 export const addTurf = async (turfData) => {
   try {
     const token = localStorage.getItem("adminToken");
+    const isFormData = typeof FormData !== "undefined" && turfData instanceof FormData;
     const response = await fetch(ADMIN_TURF_BASE_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(turfData),
+      body: isFormData ? turfData : JSON.stringify(turfData),
     });
 
     const data = await response.json();
@@ -131,13 +140,14 @@ export const addTurf = async (turfData) => {
 export const updateTurf = async (id, turfData) => {
   try {
     const token = localStorage.getItem("adminToken");
+    const isFormData = typeof FormData !== "undefined" && turfData instanceof FormData;
     const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(turfData),
+      body: isFormData ? turfData : JSON.stringify(turfData),
     });
 
     const data = await response.json();
@@ -176,12 +186,10 @@ export const approveTurf = async (id) => {
   try {
     const token = localStorage.getItem("adminToken");
     const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}/approve`, {
-      method: "PATCH",
+      method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({}),
     });
 
     const data = await response.json();
@@ -195,16 +203,14 @@ export const approveTurf = async (id) => {
   }
 };
 
-export const rejectTurf = async (id, reason) => {
+export const rejectTurf = async (id) => {
   try {
     const token = localStorage.getItem("adminToken");
     const response = await fetch(`${ADMIN_TURF_BASE_URL}/${id}/reject`, {
-      method: "PATCH",
+      method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({ reason }),
     });
 
     const data = await response.json();
@@ -262,24 +268,59 @@ export const getBusinessTurfs = async () => {
   }
 };
 
-export const createBusinessTurf = async (turfData) => {
+export const createBusinessTurf = async (turfData, images = {}) => {
   try {
     const token = localStorage.getItem("businessToken");
+    const thumbnailImages = images.thumbnailImages || [];
+    let gallery = turfData.gallery || {};
+
+    if (images.mainImage || thumbnailImages.length) {
+      if (!images.mainImage) {
+        return { success: false, message: "A main turf image is required." };
+      }
+      if (thumbnailImages.length + 1 > 10) {
+        return { success: false, message: "Upload no more than 10 images in total." };
+      }
+
+      const imageForm = new FormData();
+      imageForm.append("mainImage", images.mainImage);
+      thumbnailImages.forEach((image) => imageForm.append("thumbnailImages", image));
+
+      const uploadResponse = await fetch(buildApiUrl("/business/turfs/upload"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: imageForm,
+      });
+      const uploadData = await uploadResponse.json().catch(() => ({}));
+      if (!uploadResponse.ok) {
+        return {
+          success: false,
+          message: uploadData.message || uploadData.error || "Unable to upload turf images.",
+          data: uploadData,
+        };
+      }
+
+      gallery = uploadData.data?.gallery || uploadData.gallery;
+      if (!gallery?.mainImage) {
+        return { success: false, message: "Image upload succeeded but the server did not return a main image URL.", data: uploadData };
+      }
+    }
+
     const response = await fetch(buildApiUrl("/business/turfs"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(turfData),
+      body: JSON.stringify({ ...turfData, gallery }),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (response.ok) {
       return { success: true, data };
     }
 
-    return { success: false, message: data.message };
+    return { success: false, message: data.message || data.error || "Unable to create turf." , data };
   } catch (error) {
     return { success: false, message: error.message };
   }

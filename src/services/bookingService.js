@@ -4,6 +4,7 @@ import { buildApiUrl } from "./apiConfig";
 const USER_BOOKING_BASE_URL = buildApiUrl("/user/bookings");
 const ADMIN_BOOKING_BASE_URL = buildApiUrl("/admin/bookings");
 const BUSINESS_BOOKING_BASE_URL = buildApiUrl("/business/bookings");
+const BUSINESS_BOOKING_STATS_URL = buildApiUrl("/business/booking-stats");
 const API_BASE_URL = buildApiUrl("/").replace(/\/$/, "");
 
 const readResponse = async (response) => {
@@ -60,8 +61,11 @@ export const verifyBookingPayment = async ({ orderId, paymentId, signature }) =>
 // User booking endpoints
 export const createBooking = async (bookingData) => {
   try {
+    if (!bookingData?.turfId || bookingData.facilityId) {
+      return { success: false, message: "A turfId is required to create a booking." };
+    }
     const token = localStorage.getItem("token");
-    const response = await fetch(USER_BOOKING_BASE_URL, {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -145,7 +149,7 @@ export const getAdminBookings = async () => {
 export const getBookingStats = async () => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${ADMIN_BOOKING_BASE_URL}/stats`, {
+    const response = await fetch(buildApiUrl("/admin/booking-stats"), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -155,7 +159,7 @@ export const getBookingStats = async () => {
 
     const data = await response.json();
     if (response.ok) {
-      return { success: true, data };
+      return { success: true, data: data.data ?? data };
     } else {
       return { success: false, message: data.message };
     }
@@ -189,7 +193,7 @@ export const getBusinessBookings = async () => {
 export const getBusinessBookingStats = async () => {
   try {
     const token = localStorage.getItem("businessToken");
-    const response = await fetch(`${BUSINESS_BOOKING_BASE_URL}/stats`, {
+    const response = await fetch(BUSINESS_BOOKING_STATS_URL, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -212,7 +216,7 @@ export const getBusinessBookingStats = async () => {
 export const getAllBookings = async () => {
   try {
     const token = localStorage.getItem("adminToken");
-    const response = await fetch(`${ADMIN_BOOKING_BASE_URL}/all`, {
+    const response = await fetch(ADMIN_BOOKING_BASE_URL, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

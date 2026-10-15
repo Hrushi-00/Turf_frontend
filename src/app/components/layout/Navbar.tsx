@@ -82,6 +82,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  if (pathname.startsWith("/business") || pathname.startsWith("/admin")) return null;
+
   return (
     <>
       <style>{`

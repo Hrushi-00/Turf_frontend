@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Skeleton } from "../../../../components/Skeleton";
 import { getTurfById } from "@/src/services/turfService";
 import { platformApi } from "@/src/services/platformService";
 
@@ -81,7 +82,7 @@ export default function TurfDetailsPage() {
     <main className="min-h-screen bg-[#090b0a] px-5 pb-20 pt-28 text-white md:px-10">
       <div className="mx-auto max-w-6xl">
         <Link href="/dashboard/booking/turfs" className="text-sm text-lime-300 hover:text-lime-200">← Back to turfs</Link>
-        {loading ? <p className="py-24 text-center text-zinc-400">Loading turf details…</p>
+        {loading ? <div className="mt-6 grid gap-8 lg:grid-cols-[1.4fr_1fr]" aria-label="Loading turf details"><div className="space-y-5"><Skeleton className="h-[280px] w-full md:h-[420px]" /><Skeleton className="h-40 w-full" /><Skeleton className="h-32 w-full" /></div><div className="space-y-5"><Skeleton className="h-48 w-full" /><Skeleton className="h-40 w-full" /></div></div>
           : error || !turf ? <div role="alert" className="mt-8 rounded-xl border border-red-900 bg-red-950/40 p-5 text-red-200">{error || "Turf not found."}</div>
             : <>
               <header className="mb-8 mt-5 flex flex-wrap items-end justify-between gap-5">

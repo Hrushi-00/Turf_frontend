@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Skeleton } from "../../../components/Skeleton";
 import { cancelBooking, getUserBookings } from "@/src/services/bookingService";
 
 type Booking = {
@@ -81,7 +82,7 @@ export default function BookingDetailsPage() {
       <header className="mb-8 mt-5"><p className="text-xs font-bold uppercase tracking-[.25em] text-lime-300">Booking details</p><h1 className="mt-2 text-4xl font-black md:text-5xl">{venueName}</h1><p className="mt-2 text-zinc-400">Booking reference: {booking?.bookingNumber || booking?._id || bookingId}</p></header>
       {error && <div role="alert" className="mb-5 rounded-xl border border-red-900 bg-red-950/40 p-4 text-red-200">{error}</div>}
       {notice && <div role="status" className="mb-5 rounded-xl border border-lime-900 bg-lime-950/40 p-4 text-lime-200">{notice}</div>}
-      {loading ? <p className="py-20 text-center text-zinc-400">Loading this booking...</p>
+      {loading ? <section className="space-y-6 rounded-2xl border border-white/10 bg-white/[.035] p-6 md:p-8" aria-label="Loading booking details"><Skeleton className="h-8 w-1/2" /><div className="grid gap-6 sm:grid-cols-2">{Array.from({ length: 6 }, (_, index) => <div key={index} className="space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-5 w-2/3" /></div>)}</div></section>
         : !booking ? <p className="rounded-xl border border-white/10 p-6 text-zinc-300">Booking not found.</p>
           : <>
             <section className="rounded-2xl border border-white/10 bg-white/[.035] p-6 md:p-8">

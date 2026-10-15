@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { changeUserPassword, deleteUserAccount, getCurrentUser, getUserProfile, logout, updateUserProfile } from "@/src/services/authService";
 import { cancelBooking, getUserBookings } from "@/src/services/bookingService";
 import { platformApi } from "@/src/services/platformService";
+import { Skeleton } from "../../components/Skeleton";
 
 type RecordItem = Record<string, any>;
 type AccountData = Record<string, any[]>;
@@ -178,7 +179,7 @@ export default function UserAccountPage() {
         <nav className="flex gap-2 overflow-x-auto lg:flex-col">{sections.map(([key, label]) => <button key={key} onClick={() => { setActive(key); setMessage(""); }} className={`whitespace-nowrap rounded-xl px-4 py-3 text-left text-sm font-semibold ${active === key ? "bg-lime-300 text-black" : "border border-white/10 bg-white/[.03] text-zinc-300 hover:border-white/25"}`}>{label}</button>)}</nav>
         <section className="min-h-[520px] rounded-2xl border border-white/10 bg-white/[.035] p-5 md:p-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-2xl font-bold">{sections.find(([key]) => key === active)?.[1]}</h2><p className="mt-1 text-sm text-zinc-400">Manage your customer account and activity.</p></div><button onClick={() => void loadAccount()} className="rounded-lg border border-white/15 px-4 py-2 text-sm text-zinc-300 hover:border-lime-300">Refresh</button></div>
-          {loading ? <p className="py-12 text-center text-zinc-400">Loading account data…</p> : <>
+          {loading ? <div className="space-y-4" aria-label="Loading account data"><Skeleton className="h-6 w-1/3" />{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-20 w-full" />)}</div> : <>
             {active === "bookings" && <><RecordList items={entries} empty="No bookings found yet." onSelect={viewBooking} />{bookingDetails && <div className="mt-4 rounded-xl border border-lime-300/30 p-4"><div className="mb-2 flex items-center justify-between"><h3 className="font-bold">Booking details</h3><button onClick={() => setBookingDetails(null)} className="text-sm text-zinc-400">Close</button></div><RecordList items={[bookingDetails]} empty="No details." />{bookingDetails._id && !["COMPLETED", "CANCELLED", "REFUNDED"].includes(String(bookingDetails.bookingStatus || bookingDetails.status).toUpperCase()) && <button disabled={busy} onClick={() => void runAction(() => cancelBooking(bookingDetails._id), "Booking cancellation requested.")} className="mt-4 text-sm text-red-300 hover:text-red-200">Cancel this booking</button>}</div>}</>}
             {active === "invoices" && <RecordList items={entries} empty="No invoices available." />}
             {active === "wallet" && <div className="space-y-8"><div><h3 className="mb-3 font-bold">Wallet & ledger</h3><RecordList items={data.wallet || []} empty="No wallet activity." /></div><div><h3 className="mb-3 font-bold">Loyalty points history</h3><RecordList items={data.loyalty || []} empty="No loyalty activity yet." /></div></div>}
