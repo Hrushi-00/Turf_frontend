@@ -1,5 +1,6 @@
 // Booking API Service
 import { buildApiUrl } from "./apiConfig";
+import { refreshUserToken } from "./authService";
 
 const USER_BOOKING_BASE_URL = buildApiUrl("/user/bookings");
 const ADMIN_BOOKING_BASE_URL = buildApiUrl("/admin/bookings");
@@ -7,11 +8,31 @@ const BUSINESS_BOOKING_BASE_URL = buildApiUrl("/business/bookings");
 const BUSINESS_BOOKING_STATS_URL = buildApiUrl("/business/booking-stats");
 const API_BASE_URL = buildApiUrl("/").replace(/\/$/, "");
 
+const fetchWithFreshUserToken = async (url, options = {}) => {
+  const send = () => fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+  });
+
+  let response = await send();
+  if (response.status !== 401) return response;
+
+  const body = await response.clone().json().catch(() => ({}));
+  if (!/jwt expired|token expired|invalid or expired token/i.test(`${body.error || ""} ${body.message || ""}`)) return response;
+
+  const refreshed = await refreshUserToken();
+  if (!refreshed.success) return response;
+  return send();
+};
+
 const readResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
   return response.ok
-    ? { success: true, data: data.data ?? data }
-    : { success: false, message: data.message || "The request could not be completed." };
+    ? { success: true, data: data.data ?? data, status: response.status }
+    : { success: false, message: data.message || "The request could not be completed.", status: response.status, code: data.code, error: data.error };
 };
 
 export const getTurfAvailability = async (turfId, date) => {
@@ -26,11 +47,10 @@ export const getTurfAvailability = async (turfId, date) => {
 
 export const createBookingPaymentOrder = async (bookingId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments/orders`, {
+    const response = await fetchWithFreshUserToken(`${API_BASE_URL}/payments/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
         "Idempotency-Key": crypto.randomUUID(),
       },
       body: JSON.stringify({ bookingId }),
@@ -43,11 +63,10 @@ export const createBookingPaymentOrder = async (bookingId) => {
 
 export const verifyBookingPayment = async ({ orderId, paymentId, signature }) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/payments/verify`, {
+    const response = await fetchWithFreshUserToken(`${API_BASE_URL}/payments/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
         "Idempotency-Key": crypto.randomUUID(),
       },
       body: JSON.stringify({ orderId, paymentId, signature }),
@@ -64,12 +83,10 @@ export const createBooking = async (bookingData) => {
     if (!bookingData?.turfId || bookingData.facilityId) {
       return { success: false, message: "A turfId is required to create a booking." };
     }
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
+    const response = await fetchWithFreshUserToken(`${API_BASE_URL}/bookings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
         "Idempotency-Key": crypto.randomUUID(),
       },
       body: JSON.stringify(bookingData),
@@ -79,7 +96,7 @@ export const createBooking = async (bookingData) => {
     if (response.ok) {
       return { success: true, data };
     } else {
-      return { success: false, message: data.message };
+      return { success: false, message: data.message || "Booking could not be created.", status: response.status, code: data.code, error: data.error };
     }
   } catch (error) {
     return { success: false, message: error.message };

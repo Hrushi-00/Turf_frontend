@@ -294,7 +294,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
             {loading ? (
               Array.from({ length: 6 }, (_, index) => <TurfCardSkeleton key={index} />)
             ) : filtered.length === 0 ? (
@@ -304,7 +304,7 @@ export default function Home() {
             ) : (
               filtered.map((t, i) => (
                 <article key={t.id} className="au turf-card group min-w-0 overflow-hidden rounded-2xl border border-gray-700 bg-black/40 transition-all hover:border-white/40" style={{ animationDelay: `${0.1 + i * 0.12}s` }}>
-                  <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} aria-label={`View ${t.name} details`} className="card-image relative block h-48 overflow-hidden bg-gradient-to-br from-white/10 to-white/5">
+                  <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} aria-label={`View ${t.name} details`} className="card-image relative block h-28 overflow-hidden bg-gradient-to-br from-white/10 to-white/5 sm:h-48">
                     {t.image && <Image src={t.image} alt={t.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" unoptimized className="object-cover" />}
                     <div className="absolute inset-0 bg-black/40" />
                     {t.metaInfo?.isFeatured && (
@@ -318,18 +318,18 @@ export default function Home() {
                       </span>
                     )}
                   </Link>
-                  <div className="p-6">
-                    <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
+                  <div className="p-3 sm:p-6">
+                    <div className="mb-3 flex min-w-0 items-start justify-between gap-2 sm:mb-4 sm:gap-3">
                       <div>
-                        <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} className="heading mb-1 block break-words text-lg font-black hover:text-lime-200">{t.name}</Link>
-                        <p className="text-gray-500 text-sm">{t.location}</p>
+                        <Link href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`} className="heading mb-1 block break-words text-sm font-black hover:text-lime-200 sm:text-lg">{t.name}</Link>
+                        <p className="text-xs text-gray-500 sm:text-sm">{t.location}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-black text-white">₹{t.price}</p>
-                        <p className="text-gray-500 text-xs">per hour</p>
+                        <p className="text-lg font-black text-white sm:text-2xl">₹{t.price}</p>
+                        <p className="text-[10px] text-gray-500 sm:text-xs">per hour</p>
                       </div>
                     </div>
-                    <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-gray-700 pb-6 text-xs text-gray-400">
+                    <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b border-gray-700 pb-4 text-[10px] text-gray-400 sm:mb-6 sm:gap-3 sm:pb-6 sm:text-xs">
                       <span>Rating: <span className="text-white font-bold">{t.rating || "N/A"}</span></span>
                       <span>·</span>
                       <span className="text-white font-bold">{t.sportsAvailable?.[0] || t.sport}</span>
@@ -338,7 +338,7 @@ export default function Home() {
                     </div>
                     <Link
                       href={`/dashboard/booking/turfs/${encodeURIComponent(t.id)}`}
-                      className="w-full py-3 rounded-lg text-sm font-black transition-all duration-300 block text-center cta-primary text-black hover:shadow-xl"
+                      className="block w-full rounded-lg py-2.5 text-center text-[10px] font-black text-black transition-all duration-300 cta-primary hover:shadow-xl sm:py-3 sm:text-sm"
                     >
                       VIEW DETAILS
                     </Link>

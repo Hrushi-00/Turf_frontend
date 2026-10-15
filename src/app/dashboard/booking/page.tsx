@@ -77,7 +77,7 @@ function BookingContent() {
     setError("");
     setSelectedSlot("");
     const result = await getTurfAvailability(turfId, date);
-    if (result.success) {
+    if (result.success && "data" in result) {
       const payload = unwrap(result.data);
       const venue = payload?.turf || payload?.data?.turf || turf;
       const suppliedSlots = Array.isArray(payload) ? payload : [payload?.availableSlots, payload?.slots, payload?.availability?.availableSlots].find(Array.isArray);
@@ -145,6 +145,10 @@ function BookingContent() {
     setNotice("");
     const bookingResult = await createBooking({ turfId, date, timeSlot: selectedSlot, paymentMethod: "online" });
     if (!bookingResult.success) {
+      if ("status" in bookingResult && bookingResult.status === 401) {
+        router.push(`/auth/login?next=${encodeURIComponent(`/dashboard/booking?turf=${turfId}`)}`);
+        return;
+      }
       setError(bookingResult.message || "Booking could not be created.");
       setSubmitting(false);
       return;
@@ -157,7 +161,11 @@ function BookingContent() {
       return;
     }
     const orderResult = await createBookingPaymentOrder(bookingId);
-    if (!orderResult.success) {
+    if (!orderResult.success || !("data" in orderResult)) {
+      if ("status" in orderResult && orderResult.status === 401) {
+        router.push(`/auth/login?next=${encodeURIComponent("/dashboard")}`);
+        return;
+      }
       setError(`${orderResult.message || "Payment could not be started."} Your booking is saved; you can check it in My bookings.`);
       setSubmitting(false);
       return;
