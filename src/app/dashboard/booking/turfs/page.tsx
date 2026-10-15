@@ -114,7 +114,8 @@ export default function BookingTurfsPage() {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setCoordinates({ latitude: coords.latitude, longitude: coords.longitude });
-        setCatalog("turfs");
+        setSport("All");
+        setFilters((current) => ({ ...current, sport: "" }));
         setNearbyMode(true);
         setPage(1);
         setSortBy("popular");
