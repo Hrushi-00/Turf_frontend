@@ -1,5 +1,6 @@
 import "./globals.css";
 import Navbar from "./components/layout/Navbar";
+import SmoothScroll from "./components/layout/SmoothScroll";
 
 export default function RootLayout({
   children,
@@ -9,6 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SmoothScroll />
         <Navbar />
         {children}
       </body>
