@@ -21,6 +21,7 @@ workflow for reviewing businesses and venues.
 -   [Project Modules](#project-modules)
 -   [API Structure](#api-structure)
 -   [Getting Started](#getting-started)
+-   [Docker and CI/CD](#docker-and-cicd)
 -   [Environment Variables](#environment-variables)
 -   [Security and Reliability](#security-and-reliability)
 -   [Roadmap](#roadmap)
@@ -370,6 +371,42 @@ frontend API base URL to point to the running backend.
 > If `npm run dev` is not defined, open `package.json` and use the
 > available script instead. Do not assume the frontend and backend share
 > the same start command.
+
+## Docker and CI/CD
+
+The production container is defined in `docker/Dockerfile`, uses Next.js standalone output, and runs as a
+non-root user. Docker Compose reads the existing `APP_URL` setting from
+`.env.local` and builds the image:
+
+``` bash
+docker compose --env-file .env.local up --build
+```
+
+Open <http://localhost:3000>. Set `APP_URL` to the reachable backend
+origin (for example, `https://api.example.com`) before building. The
+current Next.js configuration embeds this value during the build, so
+build a separate image for each API environment.
+
+The GitHub Actions workflow at `.github/workflows/ci-cd.yml` runs `npm
+ci`, ESLint, and a production build for pull requests and pushes to
+`main`. A push to `main` publishes `ghcr.io/<owner>/<repository>:latest`
+and a commit SHA tag; pushing a version tag such as `v1.2.3` also
+publishes version tags.
+
+Before merging to `main`, add the repository variable `APP_URL` in
+**Settings → Secrets and variables → Actions → Variables**. The workflow
+uses the built-in `GITHUB_TOKEN` to publish to GitHub Container Registry;
+allow package write access for Actions if the repository requires it.
+Pull the image with:
+
+``` bash
+docker pull ghcr.io/<owner>/<repository>:latest
+docker run --rm -p 3000:3000 ghcr.io/<owner>/<repository>:latest
+```
+
+This workflow publishes the deployable image to GHCR. Starting that image
+on a hosting provider or server is the deployment step for the chosen
+infrastructure.
 
 ## Environment Variables
 

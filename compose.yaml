@@ -1,0 +1,10 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        APP_URL: ${APP_URL:?Set APP_URL in .env.local or the shell}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
