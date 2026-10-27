@@ -15,6 +15,7 @@ import {
   getBusinessBookings,
   updateBusinessBookingStatus,
 } from "@/src/services/bookingService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 type BusinessTurf = {
   id: string;
@@ -24,7 +25,7 @@ type BusinessTurf = {
   weekendPrice: number;
   approved: boolean;
   sport: string;
-  raw: Record<string, any>;
+  raw: ApiRecord;
 };
 
 type BusinessBooking = {
@@ -102,7 +103,7 @@ const toBusinessTurfs = (items: unknown[]): BusinessTurf[] =>
       weekendPrice: turf.pricing?.weekendRate || 0,
       approved: turf.metaInfo?.isApproved ?? turf.isApproved ?? false,
       sport: turf.turfDetails?.sportsAvailable?.[0] || "Sports",
-      raw: item as Record<string, any>,
+      raw: item as ApiRecord,
     };
   });
 
@@ -325,10 +326,16 @@ export default function BusinessDashboardPage() {
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setBusiness(getCurrentBusiness());
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadDashboard();
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setBusiness(getCurrentBusiness());
+      void loadDashboard();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   const handleCreateTurf = async (event: FormEvent<HTMLFormElement>) => {

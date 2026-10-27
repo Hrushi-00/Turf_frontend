@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { adminApi } from "@/src/services/adminApiService";
 import { isAdminLoggedIn } from "@/src/services/authService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
-type DocumentRecord = Record<string, any>;
+type DocumentRecord = ApiRecord;
 
 const findDocuments = (value: unknown): DocumentRecord[] => {
   if (Array.isArray(value)) return value.filter((item): item is DocumentRecord => Boolean(item) && typeof item === "object");
@@ -54,6 +55,7 @@ export default function BusinessDocumentReviewPage() {
       return;
     }
 
+    let active = true;
     let cached: DocumentRecord | null = null;
     try {
       const raw = sessionStorage.getItem(`admin-business-document:${id}`);
@@ -61,9 +63,12 @@ export default function BusinessDocumentReviewPage() {
     } catch {
       sessionStorage.removeItem(`admin-business-document:${id}`);
     }
-    if (cached && documentId(cached) === id) setDocument(cached);
+    if (cached && documentId(cached) === id) {
+      queueMicrotask(() => {
+        if (active) setDocument(cached);
+      });
+    }
 
-    let active = true;
     void adminApi.businessDocuments({ status: "PENDING_REVIEW", page: 1, limit: 100 }).then((result) => {
       if (!active) return;
       if (result.success) {

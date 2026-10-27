@@ -6,16 +6,17 @@ import { changeUserPassword, deleteUserAccount, getCurrentUser, getUserProfile, 
 import { cancelBooking, getUserBookings } from "@/src/services/bookingService";
 import { platformApi } from "@/src/services/platformService";
 import { Skeleton } from "../../components/Skeleton";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
-type RecordItem = Record<string, any>;
-type AccountData = Record<string, any[]>;
+type RecordItem = ApiRecord;
+type AccountData = Record<string, ApiRecord[]>;
 const sections = [
   ["bookings", "Bookings"], ["invoices", "Invoices"], ["wallet", "Wallet & points"],
   ["memberships", "Memberships"], ["reviews", "Reviews"], ["notifications", "Notifications"],
   ["support", "Support"], ["settings", "Profile & security"],
 ] as const;
 
-function toRecords(value: any, keys: string[] = []): RecordItem[] {
+function toRecords(value: ApiRecord, keys: string[] = []): RecordItem[] {
   if (Array.isArray(value)) return value;
   if (!value || typeof value !== "object") return [];
   for (const key of [...keys, "items", "results", "records", "history"]) {
@@ -24,7 +25,7 @@ function toRecords(value: any, keys: string[] = []): RecordItem[] {
   return Object.keys(value).length ? [value] : [];
 }
 
-function labelValue(value: any) {
+function labelValue(value: unknown) {
   if (value == null || value === "") return "—";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
@@ -63,7 +64,6 @@ export default function UserAccountPage() {
   const [profileForm, setProfileForm] = useState({ name: "", contactNumber: "" });
 
   const loadAccount = useCallback(async () => {
-    setLoading(true);
     const [profileResult, bookingResult, invoiceResult, reviewResult, pointsResult, walletResult, membershipResult, planResult, notificationResult, preferenceResult, supportResult] = await Promise.all([
       getUserProfile(), getUserBookings(), platformApi.invoices(), platformApi.myReviews(), platformApi.loyalty(), platformApi.wallet(), platformApi.myMemberships(), platformApi.membershipPlans(), platformApi.notifications(), platformApi.notificationPreferences(), platformApi.supportTickets(),
     ]);
@@ -93,9 +93,9 @@ export default function UserAccountPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { void loadAccount(); }, [loadAccount]);
+  useEffect(() => { queueMicrotask(() => { void loadAccount(); }); }, [loadAccount]);
 
-  const runAction = async (action: () => Promise<any>, successText: string, reload = true) => {
+  const runAction = async (action: () => Promise<ApiRecord>, successText: string, reload = true) => {
     setBusy(true);
     setMessage("");
     const result = await action();

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { businessApi } from "@/src/services/businessApiService";
 import { isBusinessLoggedIn, logout } from "@/src/services/authService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
-type Row = Record<string, any>;
+type Row = ApiRecord;
 type Section = "overview" | "profile" | "verification" | "turfs" | "bookings" | "finance" | "inbox";
 const sections: { id: Section; label: string }[] = [
   { id: "overview", label: "Overview" }, { id: "profile", label: "Business profile" },
@@ -18,7 +19,7 @@ const field = "w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-3 
 const button = "rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-black transition hover:bg-lime-200 disabled:opacity-50";
 const secondary = "rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:border-white/40";
 
-function rows(result: any): Row[] {
+function rows(result: ApiRecord): Row[] {
   const data = result?.data;
   if (Array.isArray(data)) return data;
   for (const key of ["entries", "bookings", "plans", "notifications", "tickets", "settlements", "payouts"]) {
@@ -26,7 +27,7 @@ function rows(result: any): Row[] {
   }
   return [];
 }
-function one(result: any): Row | null { return result?.data && typeof result.data === "object" && !Array.isArray(result.data) ? result.data : null; }
+function one(result: ApiRecord): Row | null { return result?.data && typeof result.data === "object" && !Array.isArray(result.data) ? result.data : null; }
 function title(row: Row) { return row.displayName || row.name || row.subject || row.title || row.documentType || "Business item"; }
 function idOf(row: Row) { return row.id || row._id || ""; }
 function isCurrentPlan(plan: Row, subscription: Row | null) {
@@ -109,7 +110,7 @@ export default function BusinessPortalPage() {
     void load();
   }, [load, router]);
 
-  const run = async (action: () => Promise<any>, successMessage: string, refresh = true) => {
+  const run = async (action: () => Promise<ApiRecord>, successMessage: string, refresh = true) => {
     setBusy(true); setError(""); setNotice("");
     const result = await action(); setBusy(false);
     if (!result.success) { setError(result.message || "That request could not be completed."); return result; }
@@ -127,7 +128,7 @@ export default function BusinessPortalPage() {
       setBusy(false); setError("Checkout order was created, but Razorpay checkout details are missing. Contact support before retrying."); return;
     }
     try {
-      if (!(window as any).Razorpay) {
+      if (!(window as unknown as ApiRecord).Razorpay) {
         await new Promise<void>((resolve, reject) => {
           const existing = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
           const script = existing || document.createElement("script");
@@ -137,8 +138,8 @@ export default function BusinessPortalPage() {
           if (!existing) document.body.appendChild(script);
         });
       }
-      if (!(window as any).Razorpay) throw new Error("Razorpay checkout did not initialize.");
-      const checkout = new (window as any).Razorpay({
+      if (!(window as unknown as ApiRecord).Razorpay) throw new Error("Razorpay checkout did not initialize.");
+      const checkout = new (window as unknown as ApiRecord).Razorpay({
         key, order_id: orderId, amount, currency: order.currency || "INR", name: "TurfBook",
         description: `${planName} subscription`,
         handler: async (payment: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
@@ -253,12 +254,12 @@ function ProfileDetails({ profile }: { profile: Row }) {
   </section>;
 }
 
-function PasswordForm({ onSave, busy }: { onSave: (body: Row) => Promise<any>; busy: boolean }) {
+function PasswordForm({ onSave, busy }: { onSave: (body: Row) => Promise<ApiRecord>; busy: boolean }) {
   const [currentPassword,setCurrent]=useState(""); const [newPassword,setNew]=useState("");
   return <form className="mt-6 space-y-3" onSubmit={async e=>{e.preventDefault();await onSave({currentPassword,newPassword});setCurrent("");setNew("");}}><h3 className="font-semibold">Change password</h3><input className={field} type="password" autoComplete="current-password" required placeholder="Current password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/><input className={field} type="password" autoComplete="new-password" minLength={6} required placeholder="New password" value={newPassword} onChange={e=>setNew(e.target.value)}/><button className={secondary} disabled={busy}>Update password</button></form>;
 }
 
-function BookingRow({ item, onUpdate, busy }: { item: Row; onUpdate: (status: string) => Promise<any>; busy: boolean }) {
+function BookingRow({ item, onUpdate, busy }: { item: Row; onUpdate: (status: string) => Promise<ApiRecord>; busy: boolean }) {
   const id = idOf(item); const [status,setStatus]=useState(item.bookingStatus || "pending");
   return <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4"><div><p className="font-semibold">{item.turf?.turfDetails?.turfName || item.venue?.name || "Booking"}</p><p className="mt-1 text-xs text-white/45">{item.user?.name || item.customer?.name || "Customer"} · {item.date ? new Date(item.date).toLocaleDateString() : "Date unavailable"} · {item.timeSlot || ""}</p><p className="mt-1 text-xs text-white/50">Payment: {item.paymentStatus || "pending"} · ₹{Number(item.price || 0).toLocaleString("en-IN")}</p></div><div className="flex gap-2"><select className={`${field} min-w-32`} value={status} onChange={e=>setStatus(e.target.value)}>{["pending","confirmed","completed","cancelled"].map(x=><option key={x}>{x}</option>)}</select><button className={button} disabled={busy||!id} onClick={()=>void onUpdate(status)}>Save</button></div></div>;
 }

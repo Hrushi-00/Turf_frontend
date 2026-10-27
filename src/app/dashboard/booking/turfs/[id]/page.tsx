@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "../../../../components/Skeleton";
 import { getTurfById } from "@/src/services/turfService";
 import { platformApi } from "@/src/services/platformService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 type Turf = {
   _id?: string;
@@ -30,7 +31,7 @@ type Turf = {
 
 type TurfReview = { rating?: number };
 
-const unwrapTurf = (value: any): Turf | null => value?.data?.data || value?.data?.turf || value?.data || value?.turf || null;
+const unwrapTurf = (value: ApiRecord): Turf | null => value?.data?.data || value?.data?.turf || value?.data || value?.turf || null;
 
 export default function TurfDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -42,7 +43,6 @@ export default function TurfDetailsPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     getTurfById(turfId).then((result) => {
       if (!active) return;
       if (result.success) {
@@ -60,7 +60,7 @@ export default function TurfDetailsPage() {
     let active = true;
     platformApi.publicReviews({ targetType: "FACILITY", targetId: turfId, page: 1, limit: 100 }).then((result) => {
       if (!active || !result.success) return;
-      const payload = result.data as any;
+      const payload = result.data as ApiRecord;
       const list = Array.isArray(payload) ? payload : payload?.reviews || payload?.items || payload?.results || payload?.data || [];
       if (Array.isArray(list)) setReviews(list);
     }).catch(() => {});

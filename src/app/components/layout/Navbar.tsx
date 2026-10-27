@@ -5,13 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useState, useEffect, useRef } from "react";
 import { getCurrentUser, isUserLoggedIn, logout } from "@/src/services/authService";
 import { platformApi } from "@/src/services/platformService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 export default function Navbar() {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ApiRecord | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
   const router = useRouter();

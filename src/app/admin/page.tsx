@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   approveTurf,
   getAllAdminTurfs,
@@ -14,6 +14,7 @@ import {
 } from "@/src/services/bookingService";
 import { getCurrentAdmin, isAdminLoggedIn, logout } from "@/src/services/authService";
 import { adminApi } from "@/src/services/adminApiService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 type TurfRecord = {
   id: string;
@@ -24,7 +25,7 @@ type TurfRecord = {
   featured: boolean;
   trending: boolean;
   sport: string;
-  raw: Record<string, any>;
+  raw: ApiRecord;
 };
 
 type BookingRecord = {
@@ -74,7 +75,7 @@ const emptyTurfForm = (): TurfFormState => ({
 
 const asText = (value: unknown) => value === undefined || value === null ? "" : String(value);
 
-const toTurfForm = (raw: Record<string, any>): TurfFormState => {
+const toTurfForm = (raw: ApiRecord): TurfFormState => {
   const defaults = emptyTurfForm();
   const turfDetails = raw.turfDetails || raw;
   const listText = (value: unknown) => Array.isArray(value) ? value.map((item) => typeof item === "string" ? item : item?.name || item?.slug || "").filter(Boolean).join(", ") : asText(value);
@@ -197,7 +198,7 @@ const toTurfRecords = (payload: unknown): TurfRecord[] =>
       featured: turf.metaInfo?.isFeatured ?? turf.isFeatured ?? false,
       trending: turf.metaInfo?.isTrending ?? turf.isTrending ?? false,
       sport: turf.turfDetails?.sportsAvailable?.[0] || "Sports",
-      raw: turf as Record<string, any>,
+      raw: turf as ApiRecord,
     };
   });
 
@@ -243,22 +244,22 @@ export default function AdminDashboardPage() {
   const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({});
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({});
   const [businessStatus, setBusinessStatus] = useState("PENDING");
-  const [businessDocuments, setBusinessDocuments] = useState<Record<string, any>[]>([]);
+  const [businessDocuments, setBusinessDocuments] = useState<ApiRecord[]>([]);
   const [turfFormOpen, setTurfFormOpen] = useState(false);
   const [turfDraft, setTurfDraft] = useState<TurfFormState>(emptyTurfForm);
   const [turfMainImage, setTurfMainImage] = useState<File | null>(null);
   const [turfThumbnails, setTurfThumbnails] = useState<File[]>([]);
   const [editTurfId, setEditTurfId] = useState<string | null>(null);
 
-  const readTurfField = (path: string): string => path.split(".").reduce<any>((value, key) => value?.[key], turfDraft) ?? "";
+  const readTurfField = (path: string): string => path.split(".").reduce<unknown>((value, key) => value && typeof value === "object" ? (value as ApiRecord)[key] : undefined, turfDraft) as string || "";
   const updateTurfField = (path: string, value: string) => {
     setTurfDraft((current) => {
-      const next = structuredClone(current) as any;
+      const next = structuredClone(current) as ApiRecord;
       const keys = path.split(".");
       let target = next;
       keys.slice(0, -1).forEach((key) => { target = target[key]; });
       target[keys[keys.length - 1]] = value;
-      return next;
+      return next as unknown as TurfFormState;
     });
   };
   const renderTurfInput = (label: string, path: string, options: { type?: string; required?: boolean; min?: string; max?: string; placeholder?: string; pattern?: string } = {}) => (
@@ -267,7 +268,7 @@ export default function AdminDashboardPage() {
     </label>
   );
 
-  async function loadDashboard(selectedBusinessStatus = businessStatus) {
+  const loadDashboard = useCallback(async (selectedBusinessStatus = businessStatus) => {
     setLoading(true);
     setError("");
 
@@ -298,7 +299,7 @@ export default function AdminDashboardPage() {
       setBusinessQueueError(businessesResult.message || "Unable to load pending business profiles.");
     }
 
-    if (documentsResult.success) setBusinessDocuments(extractBusinessItems(documentsResult.data) as Record<string, any>[]);
+    if (documentsResult.success) setBusinessDocuments(extractBusinessItems(documentsResult.data) as ApiRecord[]);
 
     const failures = [
       !turfsResult.success ? `Turfs: ${turfsResult.message || "failed to load"}` : "",
@@ -309,19 +310,22 @@ export default function AdminDashboardPage() {
     setError(failures.join(" · "));
 
     setLoading(false);
-  }
+  }, [businessStatus]);
 
   useEffect(() => {
+    let active = true;
     if (!isAdminLoggedIn()) {
       router.push("/admin/login");
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAdmin(getCurrentAdmin());
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadDashboard();
-  }, [router]);
+    queueMicrotask(() => {
+      if (!active) return;
+      setAdmin(getCurrentAdmin());
+      void loadDashboard();
+    });
+    return () => { active = false; };
+  }, [loadDashboard, router]);
 
   const handleApprove = async (turfId: string) => {
     setActionId(turfId);
@@ -421,16 +425,6 @@ export default function AdminDashboardPage() {
     const result = await adminApi.reviewBusiness(businessId, { approvalStatus, ...(reason ? { reason } : {}) });
     if (result.success) await loadDashboard();
     else setBusinessQueueError(result.message || "Unable to update business approval.");
-    setActionId(null);
-  };
-
-  const reviewDocument = async (documentId: string, status: string) => {
-    const rejectionReason = status === "REJECTED" ? window.prompt("Enter a rejection reason (required):")?.trim() : "";
-    if (status === "REJECTED" && !rejectionReason) return;
-    setActionId(`document:${documentId}`);
-    const result = await adminApi.reviewBusinessDocument(documentId, { status, ...(rejectionReason ? { rejectionReason } : {}) });
-    if (result.success) await loadDashboard();
-    else setError(result.message || "Unable to review business document.");
     setActionId(null);
   };
 

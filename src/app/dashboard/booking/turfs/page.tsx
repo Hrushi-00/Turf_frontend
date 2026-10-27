@@ -38,72 +38,6 @@ export default function BookingTurfsPage() {
   const [error, setError] = useState("");
   const sports = ["All", "Football", "Cricket", "Badminton", "Tennis", "Basketball"];
 
-  useEffect(() => {
-    const applySearchTerm = (q: string) => {
-      setDraft((current) => ({ ...current, q }));
-      setFilters((current) => ({ ...current, q }));
-      setPage(1);
-    };
-    const initialQuery = new URLSearchParams(window.location.search).get("q");
-    if (initialQuery) applySearchTerm(initialQuery);
-    const initialParams = new URLSearchParams(window.location.search);
-    if (initialParams.get("nearby") === "1") findNearbyTurfs();
-    const handleCatalogSearch = (event: Event) => {
-      const q = (event as CustomEvent<{ q: string }>).detail?.q || "";
-      applySearchTerm(q);
-    };
-    const handleNearbySearch = () => findNearbyTurfs();
-    window.addEventListener("catalog-search", handleCatalogSearch);
-    window.addEventListener("catalog-nearby", handleNearbySearch);
-    return () => {
-      window.removeEventListener("catalog-search", handleCatalogSearch);
-      window.removeEventListener("catalog-nearby", handleNearbySearch);
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    if (nearbyMode && !coordinates) return () => { active = false; };
-    setLoading(true);
-    setError("");
-    const pageSize = nearbyMode ? 20 : 10;
-    const query = { ...filters, page, limit: pageSize };
-    const request = nearbyMode
-      ? searchNearbyTurfs({ ...coordinates, radiusKm, page, limit: 20 })
-      : searchTurfs(query);
-
-    request.then((result) => {
-      if (!active) return;
-      if (result.success) {
-        setItems(result.data);
-        const pagination = "pagination" in result ? result.pagination : null;
-        setHasNextPage(pagination?.hasNextPage ?? (pagination?.totalPages ? page < pagination.totalPages : result.data.length === pageSize));
-      } else {
-        setItems([]);
-        setHasNextPage(false);
-        setError(result.message || "Could not load turfs.");
-      }
-    }).catch((requestError) => {
-      if (active) setError(requestError instanceof Error ? requestError.message : "Could not load turfs.");
-    }).finally(() => { if (active) setLoading(false); });
-
-    return () => { active = false; };
-  }, [filters, page, refreshKey, nearbyMode, coordinates, radiusKm]);
-
-  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNearbyMode(false);
-    setPage(1);
-    setFilters({ ...draft, sport: sport === "All" ? "" : sport.toLowerCase() });
-  };
-
-  const selectSport = (value: string) => {
-    setNearbyMode(false);
-    setSport(value);
-    setPage(1);
-    setFilters({ ...filters, sport: value === "All" ? "" : value.toLowerCase() });
-  };
-
   function findNearbyTurfs() {
     setError("");
     if (!navigator.geolocation) {
@@ -133,6 +67,79 @@ export default function BookingTurfsPage() {
       { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
     );
   }
+
+  useEffect(() => {
+    let active = true;
+    const applySearchTerm = (q: string) => {
+      setDraft((current) => ({ ...current, q }));
+      setFilters((current) => ({ ...current, q }));
+      setPage(1);
+    };
+    queueMicrotask(() => {
+      if (!active) return;
+      const initialQuery = new URLSearchParams(window.location.search).get("q");
+      if (initialQuery) applySearchTerm(initialQuery);
+      const initialParams = new URLSearchParams(window.location.search);
+      if (initialParams.get("nearby") === "1") findNearbyTurfs();
+    });
+    const handleCatalogSearch = (event: Event) => {
+      const q = (event as CustomEvent<{ q: string }>).detail?.q || "";
+      applySearchTerm(q);
+    };
+    const handleNearbySearch = () => findNearbyTurfs();
+    window.addEventListener("catalog-search", handleCatalogSearch);
+    window.addEventListener("catalog-nearby", handleNearbySearch);
+    return () => {
+      active = false;
+      window.removeEventListener("catalog-search", handleCatalogSearch);
+      window.removeEventListener("catalog-nearby", handleNearbySearch);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active || nearbyMode && !coordinates) return;
+      setLoading(true);
+      setError("");
+      const pageSize = nearbyMode ? 20 : 10;
+      const query = { ...filters, page, limit: pageSize };
+      const request = nearbyMode
+        ? searchNearbyTurfs({ ...coordinates, radiusKm, page, limit: 20 })
+        : searchTurfs(query);
+
+      request.then((result) => {
+        if (!active) return;
+        if (result.success) {
+          setItems(result.data);
+          const pagination = "pagination" in result ? result.pagination : null;
+          setHasNextPage(pagination?.hasNextPage ?? (pagination?.totalPages ? page < pagination.totalPages : result.data.length === pageSize));
+        } else {
+          setItems([]);
+          setHasNextPage(false);
+          setError(result.message || "Could not load turfs.");
+        }
+      }).catch((requestError) => {
+        if (active) setError(requestError instanceof Error ? requestError.message : "Could not load turfs.");
+      }).finally(() => { if (active) setLoading(false); });
+    });
+
+    return () => { active = false; };
+  }, [filters, page, refreshKey, nearbyMode, coordinates, radiusKm]);
+
+  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNearbyMode(false);
+    setPage(1);
+    setFilters({ ...draft, sport: sport === "All" ? "" : sport.toLowerCase() });
+  };
+
+  const selectSport = (value: string) => {
+    setNearbyMode(false);
+    setSport(value);
+    setPage(1);
+    setFilters({ ...filters, sport: value === "All" ? "" : value.toLowerCase() });
+  };
 
   const sortedItems = nearbyMode ? items : [...items].sort((a, b) => {
     if (sortBy === "price-low") return Number(a.price || 0) - Number(b.price || 0);

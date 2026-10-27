@@ -41,7 +41,7 @@ export default function BookingDetailsPage() {
     getUserBookings().then((result) => {
       if (!active) return;
       if (result.success) {
-        const selected = result.data.find((entry: any) => String(entry.id) === String(bookingId));
+        const selected = result.data.find((entry: { id?: string }) => String(entry.id) === String(bookingId));
         if (selected) setBooking(selected.raw || selected);
         else setError("This booking was not found in your account.");
       }
@@ -70,7 +70,7 @@ export default function BookingDetailsPage() {
     if (result.success) {
       setNotice("Booking cancellation requested.");
       const refreshed = await getUserBookings();
-      const selected = refreshed.success ? refreshed.data.find((entry: any) => String(entry.id) === String(bookingId)) : null;
+      const selected = refreshed.success ? refreshed.data.find((entry: { id?: string }) => String(entry.id) === String(bookingId)) : null;
       if (selected) setBooking(selected.raw || selected);
     } else setError(result.message || "Could not cancel this booking.");
     setBusy(false);

@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { adminApi } from "@/src/services/adminApiService";
 import { changeAdminPassword, getAdminProfile, isAdminLoggedIn, logout, updateAdminProfile } from "@/src/services/authService";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 type ToolTab = "overview" | "finance" | "catalog" | "plans" | "support" | "account";
-type ApiResult = { success: boolean; data?: any; message?: string };
-type DataSets = Record<string, any[]>;
+type ApiResult = { success: boolean; data?: ApiRecord; message?: string };
+type DataSets = Record<string, ApiRecord[]>;
 
-const listFrom = (payload: any, keys: string[] = []) : any[] => {
+const listFrom = (payload: ApiRecord | ApiRecord[] | null | undefined, keys: string[] = []): ApiRecord[] => {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
   for (const key of [...keys, "data", "items", "results", "records", "docs"]) {
@@ -24,8 +25,8 @@ const listFrom = (payload: any, keys: string[] = []) : any[] => {
   return [];
 };
 
-const getId = (item: any) => String(item?._id || item?.id || item?.paymentId || item?.ticketId || item?.businessId || "");
-const displayName = (item: any) => String(item?.name || item?.title || item?.subject || item?.businessName || item?.username || item?.email || item?.reference || getId(item) || "Record");
+const getId = (item: ApiRecord) => String(item?._id || item?.id || item?.paymentId || item?.ticketId || item?.businessId || "");
+const displayName = (item: ApiRecord) => String(item?.name || item?.title || item?.subject || item?.businessName || item?.username || item?.email || item?.reference || getId(item) || "Record");
 const pretty = (value: unknown) => JSON.stringify(value, null, 2);
 const inputClass = "mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-lime-300";
 const buttonClass = "rounded-xl bg-white px-4 py-2.5 text-sm font-black text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50";
@@ -35,14 +36,14 @@ function Panel({ title, description, children }: { title: string; description?: 
   return <section className="rounded-3xl border border-white/10 bg-white/[.04] p-5 sm:p-6"><div className="mb-5"><h2 className="text-xl font-black">{title}</h2>{description && <p className="mt-1 text-sm text-white/50">{description}</p>}</div>{children}</section>;
 }
 
-function RecordList({ title, records, empty = "No records found.", actions }: { title?: string; records: any[]; empty?: string; actions?: (record: any) => ReactNode }) {
+function RecordList({ title, records, empty = "No records found.", actions }: { title?: string; records: ApiRecord[]; empty?: string; actions?: (record: ApiRecord) => ReactNode }) {
   if (records.some((record) => record && typeof record === "object" && "monthlyPricePaise" in record && record.limits)) {
     return <SubscriptionPlanList records={records} actions={actions} />;
   }
   return <div className="space-y-3">{title && <h3 className="text-sm font-bold text-white/70">{title} · {records.length}</h3>}{records.length ? records.map((record, index) => <article key={getId(record) || index} className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h4 className="break-words font-bold">{displayName(record)}</h4><p className="mt-1 break-all font-mono text-xs text-white/40">{getId(record)}</p></div>{actions?.(record)}</div><details className="mt-3"><summary className="cursor-pointer text-xs text-white/50">View full record</summary><pre className="mt-3 max-h-72 overflow-auto rounded-xl bg-black/60 p-3 text-xs text-white/70">{pretty(record)}</pre></details></article>) : <p className="rounded-xl border border-dashed border-white/10 p-5 text-sm text-white/45">{empty}</p>}</div>;
 }
 
-function LedgerList({ records }: { records: any[] }) {
+function LedgerList({ records }: { records: ApiRecord[] }) {
   const money = (paise: unknown, currency = "INR") => new Intl.NumberFormat("en-IN", {
     style: "currency", currency, maximumFractionDigits: 2,
   }).format(Number(paise || 0) / 100);
@@ -84,7 +85,7 @@ function LedgerList({ records }: { records: any[] }) {
   </div>;
 }
 
-function SubscriptionPlanList({ records, actions }: { records: any[]; actions?: (record: any) => ReactNode }) {
+function SubscriptionPlanList({ records, actions }: { records: ApiRecord[]; actions?: (record: ApiRecord) => ReactNode }) {
   const money = (paise: unknown, currency = "INR") => new Intl.NumberFormat("en-IN", {
     style: "currency", currency, maximumFractionDigits: 2,
   }).format(Number(paise || 0) / 100);
@@ -109,13 +110,13 @@ function SubscriptionPlanList({ records, actions }: { records: any[]; actions?: 
           <div className="rounded-xl border border-white/10 bg-white/[.03] p-3"><p className="text-xs text-white/45">Venue limit</p><p className="mt-1 font-bold">{limits.maxVenues ?? limits.maxTurfs ?? "Unlimited"}</p></div>
           <div className="rounded-xl border border-white/10 bg-white/[.03] p-3"><p className="text-xs text-white/45">Facilities per venue</p><p className="mt-1 font-bold">{limits.maxFacilitiesPerVenue ?? "Unlimited"}</p></div>
         </div>
-        <div className="mt-4"><p className="text-xs font-semibold text-white/45">Features</p>{features.length ? <div className="mt-2 flex flex-wrap gap-2">{features.map((feature: any, featureIndex: number) => <span key={featureIndex} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-white/70">{typeof feature === "string" ? feature : feature.name || feature.label || String(feature)}</span>)}</div> : <p className="mt-1 text-sm text-white/60">No features listed</p>}</div>
+        <div className="mt-4"><p className="text-xs font-semibold text-white/45">Features</p>{features.length ? <div className="mt-2 flex flex-wrap gap-2">{features.map((feature: ApiRecord, featureIndex: number) => <span key={featureIndex} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-white/70">{typeof feature === "string" ? feature : feature.name || feature.label || String(feature)}</span>)}</div> : <p className="mt-1 text-sm text-white/60">No features listed</p>}</div>
       </article>;
     })}
   </div>;
 }
 
-function SubscriptionList({ records }: { records: any[] }) {
+function SubscriptionList({ records }: { records: ApiRecord[] }) {
   if (!records.length) return <p className="rounded-xl border border-dashed border-white/10 p-5 text-sm text-white/45">No subscriptions found.</p>;
 
   return <div className="space-y-3">
@@ -153,7 +154,7 @@ function SubscriptionList({ records }: { records: any[] }) {
   </div>;
 }
 
-function AnalyticsSummary({ data }: { data: any }) {
+function AnalyticsSummary({ data }: { data: ApiRecord | null }) {
   if (!data || typeof data !== "object") return <p className="mt-4 text-sm text-white/50">Analytics have not loaded yet.</p>;
 
   const money = (paise: unknown) => `₹${(Number(paise || 0) / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -179,14 +180,14 @@ function AnalyticsSummary({ data }: { data: any }) {
       <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
         <h3 className="font-bold">Business subscriptions</h3>
         <div className="mt-3 space-y-2">
-          {Array.isArray(data.subscriptions) && data.subscriptions.length ? data.subscriptions.map((item: any, index: number) => <div key={item._id || index} className="flex justify-between gap-3 text-sm"><span className="text-white/60">{String(item._id || "Unknown").replaceAll("_", " ")}</span><span className="font-bold">{item.count ?? 0}</span></div>) : <p className="text-sm text-white/45">No subscription status totals.</p>}
+          {Array.isArray(data.subscriptions) && data.subscriptions.length ? data.subscriptions.map((item: ApiRecord, index: number) => <div key={item._id || index} className="flex justify-between gap-3 text-sm"><span className="text-white/60">{String(item._id || "Unknown").replaceAll("_", " ")}</span><span className="font-bold">{item.count ?? 0}</span></div>) : <p className="text-sm text-white/45">No subscription status totals.</p>}
         </div>
         <p className="mt-3 text-sm text-white/60">Subscription revenue: {money(data.subscriptionRevenue?.revenuePaise)} ({data.subscriptionRevenue?.count ?? 0} payments)</p>
       </div>
       <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
         <h3 className="font-bold">Popular sports</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          {Array.isArray(data.popularSports) && data.popularSports.length ? data.popularSports.map((sport: any, index: number) => <span key={sport._id || sport.name || index} className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-white/70">{sport.name || sport._id || String(sport)}</span>) : <p className="text-sm text-white/45">No popular sports data.</p>}
+          {Array.isArray(data.popularSports) && data.popularSports.length ? data.popularSports.map((sport: ApiRecord, index: number) => <span key={sport._id || sport.name || index} className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-white/70">{sport.name || sport._id || String(sport)}</span>) : <p className="text-sm text-white/45">No popular sports data.</p>}
         </div>
       </div>
     </div>
@@ -197,10 +198,10 @@ export default function AdminToolsPage() {
   const router = useRouter();
   const [tab, setTab] = useState<ToolTab>("overview");
   const [sets, setSets] = useState<DataSets>({});
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [financialRules, setFinancialRules] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<ApiRecord | null>(null);
+  const [financialRules, setFinancialRules] = useState<ApiRecord | null>(null);
+  const [profile, setProfile] = useState<ApiRecord | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<ApiRecord | null>(null);
   const [filters, setFilters] = useState({ auditEntityId: "", auditAction: "", auditEntityType: "", reviewStatus: "PENDING", ticketStatus: "", ticketPriority: "", settlementStatus: "", ledgerType: "", financeBusinessId: "" });
   const [forms, setForms] = useState<Record<string, string>>({ commission: "", businessId: "", settlementId: "", settlementStatus: "PROCESSING", settlementReference: "", settlementFailure: "", userId: "", walletAmount: "", walletReason: "", sportName: "", sportSlug: "", sportDescription: "", sportIcon: "", reviewReason: "", ticketId: "", ticketReply: "", ticketStatus: "IN_PROGRESS", ticketPriority: "MEDIUM", planId: "", planName: "", planSlug: "", planDescription: "", monthly: "", quarterly: "", yearly: "", trialDays: "14", planStatus: "ACTIVE", membershipId: "", membershipName: "", membershipDescription: "", membershipPrice: "", membershipDuration: "365", membershipDiscount: "0", membershipFeatures: "", membershipStatus: "ACTIVE", auditActorId: "", auditEntityType: "" });
   const [busy, setBusy] = useState("");
@@ -289,12 +290,12 @@ export default function AdminToolsPage() {
         {loading && <p className="text-sm text-white/50">Loading section data…</p>}
 
         {tab === "overview" && <div className="grid gap-6 lg:grid-cols-2">
-          <Panel title="Platform analytics" description="Live summary from GET /api/analytics/admin"><button onClick={() => void act("analytics", () => adminApi.analytics(), "Analytics refreshed.", false).then((result: any) => result.success && setAnalytics(result.data?.data || result.data))} disabled={busy === "analytics"} className={secondaryButtonClass}>{busy === "analytics" ? "Refreshing..." : "Refresh analytics"}</button><AnalyticsSummary data={analytics} /></Panel>
+          <Panel title="Platform analytics" description="Live summary from GET /api/analytics/admin"><button onClick={() => void act("analytics", () => adminApi.analytics(), "Analytics refreshed.", false).then((result: ApiResult) => result.success && setAnalytics(result.data?.data || result.data))} disabled={busy === "analytics"} className={secondaryButtonClass}>{busy === "analytics" ? "Refreshing..." : "Refresh analytics"}</button><AnalyticsSummary data={analytics} /></Panel>
           <Panel title="Audit log" description="Filter and inspect recent admin actions"><form onSubmit={submit(async () => { await act("audit", () => adminApi.auditLogs({ page: 1, limit: 100, actorId: forms.auditActorId, entityId: filters.auditEntityId, action: filters.auditAction, entityType: filters.auditEntityType }), "Audit log refreshed.", false); })} className="mb-5 grid gap-3 sm:grid-cols-2"><label className="text-xs text-white/60">Actor ID<input value={forms.auditActorId} onChange={(e) => put("auditActorId", e.target.value)} className={inputClass} /></label><label className="text-xs text-white/60">Entity ID<input value={filters.auditEntityId} onChange={(e) => setFilters((current) => ({ ...current, auditEntityId: e.target.value }))} className={inputClass} /></label><label className="text-xs text-white/60">Action<input value={filters.auditAction} onChange={(e) => setFilters((current) => ({ ...current, auditAction: e.target.value }))} className={inputClass} /></label><label className="text-xs text-white/60">Entity type<input value={filters.auditEntityType} onChange={(e) => setFilters((current) => ({ ...current, auditEntityType: e.target.value }))} className={inputClass} /></label><button disabled={busy === "audit"} className={`${buttonClass} sm:col-span-2`}>Apply audit filters</button></form><RecordList records={records("auditLogs")} empty="No audit events found." /></Panel>
         </div>}
 
         {tab === "finance" && <div className="space-y-6">
-          <Panel title="Financial rules" description="Commission is configured in basis points (0–10000)"><form onSubmit={submit(async () => { const result = await act("rules", () => adminApi.updateFinancialRules({ bookingCommissionBps: Number(forms.commission) }), "Financial rules saved.", false); if (result.success) setFinancialRules(result.data?.data || result.data); })} className="flex flex-wrap items-end gap-3"><label className="w-full max-w-xs text-sm text-white/60">Booking commission (BPS)<input type="number" min="0" max="10000" required value={forms.commission || financialRules?.bookingCommissionBps || ""} onChange={(e) => put("commission", e.target.value)} className={inputClass} /></label><button disabled={busy === "rules"} className={buttonClass}>Save rules</button><button type="button" onClick={() => void act("rules-load", () => adminApi.financialRules(), "Rules loaded.", false).then((result: any) => result.success && setFinancialRules(result.data?.data || result.data))} className={secondaryButtonClass}>Reload</button></form>{financialRules && <pre className="mt-4 overflow-auto rounded-xl bg-black/50 p-4 text-xs text-white/60">{pretty(financialRules)}</pre>}</Panel>
+          <Panel title="Financial rules" description="Commission is configured in basis points (0–10000)"><form onSubmit={submit(async () => { const result = await act("rules", () => adminApi.updateFinancialRules({ bookingCommissionBps: Number(forms.commission) }), "Financial rules saved.", false); if (result.success) setFinancialRules(result.data?.data || result.data); })} className="flex flex-wrap items-end gap-3"><label className="w-full max-w-xs text-sm text-white/60">Booking commission (BPS)<input type="number" min="0" max="10000" required value={forms.commission || financialRules?.bookingCommissionBps || ""} onChange={(e) => put("commission", e.target.value)} className={inputClass} /></label><button disabled={busy === "rules"} className={buttonClass}>Save rules</button><button type="button" onClick={() => void act("rules-load", () => adminApi.financialRules(), "Rules loaded.", false).then((result: ApiResult) => result.success && setFinancialRules(result.data?.data || result.data))} className={secondaryButtonClass}>Reload</button></form>{financialRules && <pre className="mt-4 overflow-auto rounded-xl bg-black/50 p-4 text-xs text-white/60">{pretty(financialRules)}</pre>}</Panel>
           <Panel title="Finance filters" description="These filters reload the ledger, payouts and settlements"><div className="grid gap-3 sm:grid-cols-3"><label className="text-xs text-white/60">Business ID<input value={filters.financeBusinessId} onChange={(e) => setFilters((current) => ({ ...current, financeBusinessId: e.target.value }))} className={inputClass} /></label><label className="text-xs text-white/60">Settlement status<select value={filters.settlementStatus} onChange={(e) => setFilters((current) => ({ ...current, settlementStatus: e.target.value }))} className={inputClass}><option value="">All statuses</option>{["PENDING", "PROCESSING", "PROCESSED", "FAILED", "HELD"].map((v) => <option key={v}>{v}</option>)}</select></label><label className="text-xs text-white/60">Ledger entry type<select value={filters.ledgerType} onChange={(e) => setFilters((current) => ({ ...current, ledgerType: e.target.value }))} className={inputClass}><option value="">All types</option>{["BOOKING_CAPTURE", "BOOKING_REFUND", "PAYOUT", "ADJUSTMENT"].map((v) => <option key={v}>{v}</option>)}</select></label></div><button onClick={() => void loadTab("finance")} className={`${buttonClass} mt-4`}>Apply finance filters</button></Panel>
           <div className="grid gap-6 xl:grid-cols-2">
             <Panel title="Ledger entries"><LedgerList records={records("ledger")} /></Panel>
@@ -326,8 +327,8 @@ export default function AdminToolsPage() {
         </div>}
 
         {tab === "account" && <div className="grid gap-6 lg:grid-cols-2">
-          <Panel title="Admin profile"><form onSubmit={submit(async () => { const result = await act("profile-save", () => updateAdminProfile({ username: forms.profileUsername, email: forms.profileEmail }), "Profile updated.", false); if (result.success) { const profileResult = await getAdminProfile(); if (profileResult.success) setProfile(profileResult.data?.admin || profileResult.data?.user || profileResult.data); } })} className="space-y-3"><label className="block text-xs text-white/60">Username<input required minLength={3} maxLength={30} value={forms.profileUsername ?? profile?.username ?? ""} onChange={(e) => put("profileUsername", e.target.value)} className={inputClass} /></label><label className="block text-xs text-white/60">Email<input required type="email" value={forms.profileEmail ?? profile?.email ?? ""} onChange={(e) => put("profileEmail", e.target.value)} className={inputClass} /></label><button disabled={busy === "profile-save"} className={buttonClass}>Save profile</button></form><div className="mt-4 flex gap-3"><button onClick={() => void act("profile-load", () => getAdminProfile(), "Profile refreshed.", false).then((result: any) => result.success && setProfile(result.data?.admin || result.data?.user || result.data))} className={secondaryButtonClass}>Reload profile</button></div></Panel>
-          <Panel title="Change password"><form onSubmit={submit(async (event?: any) => { void event; await act("password", () => changeAdminPassword(forms.currentPassword, forms.newPassword), "Password changed.", false); put("currentPassword", ""); put("newPassword", ""); })} className="space-y-3"><label className="block text-xs text-white/60">Current password<input required type="password" value={forms.currentPassword || ""} onChange={(e) => put("currentPassword", e.target.value)} className={inputClass} /></label><label className="block text-xs text-white/60">New password<input required type="password" minLength={6} value={forms.newPassword || ""} onChange={(e) => put("newPassword", e.target.value)} className={inputClass} /></label><button disabled={busy === "password"} className={buttonClass}>Change password</button></form></Panel>
+          <Panel title="Admin profile"><form onSubmit={submit(async () => { const result = await act("profile-save", () => updateAdminProfile({ username: forms.profileUsername, email: forms.profileEmail }), "Profile updated.", false); if (result.success) { const profileResult = await getAdminProfile(); if (profileResult.success) setProfile(profileResult.data?.admin || profileResult.data?.user || profileResult.data); } })} className="space-y-3"><label className="block text-xs text-white/60">Username<input required minLength={3} maxLength={30} value={forms.profileUsername ?? profile?.username ?? ""} onChange={(e) => put("profileUsername", e.target.value)} className={inputClass} /></label><label className="block text-xs text-white/60">Email<input required type="email" value={forms.profileEmail ?? profile?.email ?? ""} onChange={(e) => put("profileEmail", e.target.value)} className={inputClass} /></label><button disabled={busy === "profile-save"} className={buttonClass}>Save profile</button></form><div className="mt-4 flex gap-3"><button onClick={() => void act("profile-load", () => getAdminProfile(), "Profile refreshed.", false).then((result: ApiResult) => result.success && setProfile(result.data?.admin || result.data?.user || result.data))} className={secondaryButtonClass}>Reload profile</button></div></Panel>
+          <Panel title="Change password"><form onSubmit={submit(async () => { await act("password", () => changeAdminPassword(forms.currentPassword, forms.newPassword), "Password changed.", false); put("currentPassword", ""); put("newPassword", ""); })} className="space-y-3"><label className="block text-xs text-white/60">Current password<input required type="password" value={forms.currentPassword || ""} onChange={(e) => put("currentPassword", e.target.value)} className={inputClass} /></label><label className="block text-xs text-white/60">New password<input required type="password" minLength={6} value={forms.newPassword || ""} onChange={(e) => put("newPassword", e.target.value)} className={inputClass} /></label><button disabled={busy === "password"} className={buttonClass}>Change password</button></form></Panel>
         </div>}
       </div>
     </main>

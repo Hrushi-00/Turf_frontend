@@ -4,27 +4,40 @@ import Image from "next/image";
 import { TurfCardSkeleton } from "./components/Skeleton";
 import Link from "next/link";
 import { getApprovedTurfs } from "@/src/services/turfService";
+import type { ApiRecord } from "@/src/types/apiRecord";
+
+type HomeTurf = ApiRecord & {
+  id: string;
+  name: string;
+  location: string;
+  price: number;
+  sport: string;
+  sportsAvailable?: string[];
+  image?: string;
+  rating?: number;
+  slots?: string;
+  metaInfo?: { isFeatured?: boolean; isTrending?: boolean };
+};
 
 export default function Home() {
-  const [allTurfs, setAllTurfs] = useState<any[]>([]);
+  const [allTurfs, setAllTurfs] = useState<HomeTurf[]>([]);
   const [filter, setFilter] = useState("All");
-  const [booked, setBooked] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const sports = ["All", "Football", "Cricket", "Badminton", "Tennis", "Basketball"];
 
-  useEffect(() => {
-    fetchTurfs();
-  }, []);
-
-  const fetchTurfs = async () => {
+  async function fetchTurfs() {
     setLoading(true);
     const result = await getApprovedTurfs();
     if (result.success) {
-      setAllTurfs(result.data);
+      setAllTurfs(result.data as HomeTurf[]);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => { void fetchTurfs(); });
+  }, []);
 
   const filtered = filter === "All"
     ? allTurfs
@@ -474,7 +487,7 @@ export default function Home() {
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-black font-black">T</div>
                 <span className="heading text-xl">TURFBOOK</span>
               </div>
-              <p className="text-gray-500 text-sm">India's #1 sports turf booking platform.</p>
+              <p className="text-gray-500 text-sm">India&apos;s #1 sports turf booking platform.</p>
             </div>
             <div>
               <h4 className="heading text-sm font-black mb-4 text-white">PRODUCT</h4>

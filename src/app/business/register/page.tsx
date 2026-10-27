@@ -52,7 +52,7 @@ export default function BusinessRegisterPage() {
   };
 
   const saveDraft = (nextStep: number, values = form) => {
-    const { password: _password, confirmPassword: _confirmPassword, ...safeForm } = values;
+    const safeForm = { ...values, password: undefined, confirmPassword: undefined };
     localStorage.setItem(BUSINESS_ONBOARDING_DRAFT_KEY, JSON.stringify({ step: nextStep, form: safeForm }));
   };
 

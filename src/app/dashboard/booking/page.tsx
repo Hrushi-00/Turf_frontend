@@ -7,6 +7,7 @@ import { getTurfById } from "@/src/services/turfService";
 import { createBooking, createBookingPaymentOrder, getTurfAvailability, verifyBookingPayment } from "@/src/services/bookingService";
 import { platformApi } from "@/src/services/platformService";
 import { Skeleton } from "../../components/Skeleton";
+import type { ApiRecord } from "@/src/types/apiRecord";
 
 type Turf = {
   _id?: string;
@@ -27,7 +28,7 @@ type Turf = {
 
 type Slot = string | { timeSlot?: string; startTime?: string; endTime?: string; time?: string; available?: boolean; isAvailable?: boolean };
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-const unwrap = (value: any) => value?.data ?? value;
+const unwrap = (value: ApiRecord) => value?.data ?? value;
 
 function BookingContent() {
   const router = useRouter();
@@ -38,19 +39,15 @@ function BookingContent() {
   const [date, setDate] = useState(() => localDate(new Date()));
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [loadingTurf, setLoadingTurf] = useState(true);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingTurf, setLoadingTurf] = useState(Boolean(turfId));
+  const [loadingSlots, setLoadingSlots] = useState(Boolean(turfId));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
-    if (!turfId) {
-      setLoadingTurf(false);
-      setError("Choose a venue first to see its real availability.");
-      return;
-    }
+    if (!turfId) return;
     getTurfById(turfId).then((result) => {
       if (!active) return;
       if (result.success) setTurf(unwrap(result.data));
@@ -64,7 +61,7 @@ function BookingContent() {
     let active = true;
     platformApi.publicReviews({ targetType: "FACILITY", targetId: turfId, page: 1, limit: 100 }).then((result) => {
       if (!active || !result.success) return;
-      const payload = result.data as any;
+      const payload = result.data as ApiRecord;
       const list = Array.isArray(payload) ? payload : payload?.reviews || payload?.items || payload?.results || payload?.data || [];
       if (Array.isArray(list)) setReviews(list);
     }).catch(() => {});
@@ -73,9 +70,6 @@ function BookingContent() {
 
   const loadSlots = useCallback(async () => {
     if (!turfId || !date) return;
-    setLoadingSlots(true);
-    setError("");
-    setSelectedSlot("");
     const result = await getTurfAvailability(turfId, date);
     if (result.success && "data" in result) {
       const payload = unwrap(result.data);
@@ -124,10 +118,11 @@ function BookingContent() {
       setError(result.message || "Availability could not be loaded.");
     }
     setLoadingSlots(false);
-  }, [date, turfId]);
+  }, [date, turf, turfId]);
 
-  useEffect(() => { loadSlots(); }, [loadSlots]);
+  useEffect(() => { queueMicrotask(() => { void loadSlots(); }); }, [loadSlots]);
 
+  const turfError = error || (!turfId ? "Choose a venue first to see its real availability." : "");
   const turfName = turf?.turfDetails?.turfName || turf?.name || "Sports venue";
   const sport = turf?.turfDetails?.sportsAvailable?.[0] || turf?.sport || "Sports";
   const price = turf?.pricing?.weekdayRate ?? turf?.price ?? 0;
@@ -186,7 +181,7 @@ function BookingContent() {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => {
-        const checkout = new (window as any).Razorpay({
+        const checkout = new (window as unknown as ApiRecord).Razorpay({
           key,
           order_id: razorpayOrderId,
           amount: amountPaise,
@@ -221,7 +216,7 @@ function BookingContent() {
       <div className="mx-auto w-full min-w-0 max-w-6xl">
         <Link href="/dashboard/booking/turfs" className="text-sm text-lime-300 hover:text-lime-200">← Browse venues</Link>
         <div className="mb-6 mt-3 sm:mb-9 sm:mt-5"><p className="text-[11px] font-bold uppercase tracking-[.2em] text-lime-300 sm:text-xs sm:tracking-[.25em]">Booking · Step 1 of 3</p><h1 className="mt-2 text-3xl font-black sm:text-4xl md:text-5xl">Choose your slot</h1><p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">Availability and price come from the venue service.</p></div>
-        {error && <div role="alert" className="mb-5 rounded-xl border border-red-900 bg-red-950/50 p-4 text-red-200">{error}</div>}
+        {turfError && <div role="alert" className="mb-5 rounded-xl border border-red-900 bg-red-950/50 p-4 text-red-200">{turfError}</div>}
         {notice && <div role="status" className="mb-5 rounded-xl border border-lime-900 bg-lime-950/50 p-4 text-lime-200">{notice} <Link className="underline" href="/dashboard">Open dashboard</Link></div>}
         <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
           <section className="w-full min-w-0 space-y-4 sm:space-y-6">
@@ -241,10 +236,10 @@ function BookingContent() {
             </div>
             <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5 md:p-8">
               <h2 className="mb-4 text-lg font-bold">1. Select a date</h2>
-              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2">{nextDays.map((day) => <button key={day} onClick={() => setDate(day)} className={`min-w-20 shrink-0 snap-start rounded-xl border px-3 py-3 text-sm ${date === day ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 bg-black/30 text-zinc-300"}`}><span className="block text-xs">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span><span className="mt-1 block font-bold">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></button>)}</div>
+              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2">{nextDays.map((day) => <button key={day} onClick={() => { setDate(day); setSelectedSlot(""); setError(""); setLoadingSlots(true); }} className={`min-w-20 shrink-0 snap-start rounded-xl border px-3 py-3 text-sm ${date === day ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 bg-black/30 text-zinc-300"}`}><span className="block text-xs">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span><span className="mt-1 block font-bold">{new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></button>)}</div>
             </div>
             <div className="w-full min-w-0 rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5 md:p-8">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2"><h2 className="text-base font-bold sm:text-lg">2. Choose an available time</h2><button onClick={loadSlots} className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-lime-300 hover:bg-lime-300/10">Refresh</button></div>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2"><h2 className="text-base font-bold sm:text-lg">2. Choose an available time</h2><button onClick={() => { setError(""); setLoadingSlots(true); void loadSlots(); }} className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-lime-300 hover:bg-lime-300/10">Refresh</button></div>
               {loadingSlots ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Checking availability">{Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-12" />)}</div> : slots.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{slots.map((slot, index) => { const label = slotLabel(slot); return <button key={`${label}-${index}`} onClick={() => setSelectedSlot(label)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${selectedSlot === label ? "border-lime-300 bg-lime-300 text-black" : "border-white/10 text-zinc-200 hover:border-lime-300/60"}`}>{label}</button>; })}</div> : <p className="text-zinc-400">No bookable times for this date. The venue may be closed, outside its operating hours, fully booked, or missing its schedule. Try another date or refresh.</p>}
             </div>
           </section>
