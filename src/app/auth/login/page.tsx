@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginByRole } from "@/src/services/authService";
+import { loginByRole, userGoogleLogin } from "@/src/services/authService";
 import { getBusinessOnboardingResumePath } from "@/src/services/businessOnboarding";
+import GoogleSignInButton from "@/src/app/auth/GoogleSignInButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,6 +34,23 @@ export default function LoginPage() {
       setTimeout(() => router.push(destination), 500);
     } else {
       setError(result.message || "Login failed. Please try again.");
+    }
+
+    setLoading(false);
+  };
+
+  const handleGoogleCredential = async (idToken: string) => {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    const result = await userGoogleLogin(idToken);
+    if (result.success) {
+      const payload = result.data.data || result.data.result || result.data;
+      setSuccess(`${payload.message || "Google login successful."} Redirecting...`);
+      setTimeout(() => router.push("/dashboard"), 500);
+    } else {
+      setError(result.message || "Google sign-in failed. Please try again.");
     }
 
     setLoading(false);
@@ -98,6 +116,15 @@ export default function LoginPage() {
             {success}
           </div>
         )}
+
+        <div className="mb-6">
+          <div className="mb-4 flex items-center gap-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <span className="text-sm text-gray-500">OR CONTINUE WITH</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          </div>
+          <GoogleSignInButton onCredential={handleGoogleCredential} />
+        </div>
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-5">

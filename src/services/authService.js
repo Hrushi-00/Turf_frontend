@@ -23,6 +23,17 @@ const persistUserSession = (responseData) => {
   if (user) localStorage.setItem('user', JSON.stringify(user));
 };
 
+const getApiErrorMessage = (data, fallback) => {
+  if (Array.isArray(data?.errors) && data.errors.length) {
+    const messages = data.errors
+      .map(({ field, message }) => [field, message].filter(Boolean).join(': '))
+      .filter(Boolean);
+    if (messages.length) return messages.join('\n');
+  }
+
+  return data?.message || data?.error || fallback;
+};
+
 export const userSignup = async (name, email, password, contactNumber, address) => {
   try {
     const response = await fetch(buildApiUrl('/user/auth/signup'), {
@@ -48,7 +59,7 @@ export const userSignup = async (name, email, password, contactNumber, address) 
       localStorage.removeItem('business');
       return { success: true, data };
     } else {
-      return { success: false, message: data.message };
+      return { success: false, message: getApiErrorMessage(data, 'Registration failed. Please try again.'), data };
     }
   } catch (error) {
     return { success: false, message: error.message };
@@ -81,6 +92,34 @@ export const userLogin = async (email, password) => {
     }
   } catch (error) {
     return { success: false, message: error.message };
+  }
+};
+
+export const userGoogleLogin = async (idToken) => {
+  try {
+    const response = await fetch(buildApiUrl('/users/google'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || data.error || 'Google sign-in failed. Please try again.' };
+    }
+
+    persistUserSession(data);
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('businessToken');
+    localStorage.removeItem('business');
+
+    const payload = data.data || data.result || data;
+    const token = data.token || data.accessToken || payload.token || payload.accessToken;
+    if (!token) return { success: false, message: 'Google sign-in succeeded, but the API did not return an access token.' };
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, message: error.message || 'Google sign-in failed. Please try again.' };
   }
 };
 

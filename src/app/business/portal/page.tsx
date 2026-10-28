@@ -4,15 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { businessApi } from "@/src/services/businessApiService";
+import { platformApi } from "@/src/services/platformService";
 import { isBusinessLoggedIn, logout } from "@/src/services/authService";
 import type { ApiRecord } from "@/src/types/apiRecord";
 
 type Row = ApiRecord;
-type Section = "overview" | "profile" | "verification" | "turfs" | "bookings" | "finance" | "inbox";
+type Section = "overview" | "profile" | "verification" | "turfs" | "bookings" | "reviews" | "finance" | "inbox";
 const sections: { id: Section; label: string }[] = [
   { id: "overview", label: "Overview" }, { id: "profile", label: "Business profile" },
   { id: "verification", label: "Verification" }, { id: "turfs", label: "Turfs" },
-  { id: "bookings", label: "Bookings" }, { id: "finance", label: "Finance & plans" }, { id: "inbox", label: "Inbox & support" },
+  { id: "bookings", label: "Bookings" }, { id: "reviews", label: "Reviews" }, { id: "finance", label: "Finance & plans" }, { id: "inbox", label: "Inbox & support" },
 ];
 const panel = "rounded-2xl border border-white/10 bg-[#111613] p-5 sm:p-6";
 const field = "w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-3 text-sm text-white outline-none focus:border-lime-300/60";
@@ -22,7 +23,7 @@ const secondary = "rounded-xl border border-white/15 px-4 py-2.5 text-sm font-se
 function rows(result: ApiRecord): Row[] {
   const data = result?.data;
   if (Array.isArray(data)) return data;
-  for (const key of ["entries", "bookings", "plans", "notifications", "tickets", "settlements", "payouts"]) {
+  for (const key of ["entries", "bookings", "reviews", "turfs", "plans", "notifications", "tickets", "settlements", "payouts"]) {
     if (Array.isArray(data?.[key])) return data[key];
   }
   return [];
@@ -67,6 +68,8 @@ export default function BusinessPortalPage() {
   const [documents, setDocuments] = useState<Row[]>([]);
   const [turfs, setTurfs] = useState<Row[]>([]);
   const [bookings, setBookings] = useState<Row[]>([]);
+  const [reviews, setReviews] = useState<Row[]>([]);
+  const [reviewReplies, setReviewReplies] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<Row>({});
   const [statement, setStatement] = useState<Row>({});
   const [settlements, setSettlements] = useState<Row[]>([]);
@@ -90,7 +93,12 @@ export default function BusinessPortalPage() {
     const profileData = one(p) || { address: {} };
     setAuth(one(a) || {}); setProfile(profileData);
     setDocuments(rows(d).length ? rows(d) : Array.isArray(profileData.verificationDocuments) ? profileData.verificationDocuments : Array.isArray(profileData.documents) ? profileData.documents : []);
-    setTurfs(rows(t).length ? rows(t) : Array.isArray(profileData.turfs) ? profileData.turfs : []);
+    const turfRows = rows(t).length ? rows(t) : Array.isArray(profileData.turfs) ? profileData.turfs : [];
+    setTurfs(turfRows);
+    const reviewResults = await Promise.all(turfRows.filter((turf) => idOf(turf)).map((turf) =>
+      platformApi.publicReviews({ targetType: "FACILITY", targetId: idOf(turf), page: 1, limit: 100 })
+    ));
+    setReviews(reviewResults.flatMap((result) => result.success ? rows(result) : []));
     setBookings(rows(b)); setStats(one(s) || {}); setStatement(one(f) || {}); setSettlements(rows(st)); setPlans(rows(pl)); setSubscription(one(sub) || profileData.subscription || null);
     setNotifications(rows(n)); setPreferences(one(pref) || {}); setTickets(rows(tk));
     const failures = results.filter((result) => !result.success);
@@ -115,6 +123,13 @@ export default function BusinessPortalPage() {
     const result = await action(); setBusy(false);
     if (!result.success) { setError(result.message || "That request could not be completed."); return result; }
     setNotice(successMessage); if (refresh) await load(); return result;
+  };
+  const submitReviewResponse = async (review: Row) => {
+    const reviewId = idOf(review);
+    const response = (reviewReplies[reviewId] || "").trim();
+    if (!reviewId || !response) { setError("Enter a reply before submitting."); return; }
+    const result = await run(() => businessApi.respondToReview(reviewId, { response }), "Reply posted on the review.");
+    if (result.success) setReviewReplies((current) => ({ ...current, [reviewId]: "" }));
   };
   const startPaidCheckout = async (planId: string, planName: string) => {
     setBusy(true); setError(""); setNotice("");
@@ -221,6 +236,19 @@ export default function BusinessPortalPage() {
 
       {section === "bookings" && <div className="mt-6 space-y-5"><div className="grid gap-3 sm:grid-cols-4">{[["Total",stats.totalBookings ?? bookings.length],["Paid",stats.paidBookings ?? 0],["Pending",stats.pendingBookings ?? 0],["Revenue",`₹${Number(stats.totalRevenue ?? 0).toLocaleString("en-IN")}`]].map(([k,v])=><div key={String(k)} className={panel}><p className="text-xs text-white/45">{k}</p><p className="mt-2 text-2xl font-black">{v}</p></div>)}</div><article className={panel}><h2 className="mb-4 text-lg font-bold">Booking requests</h2><div className="space-y-3">{bookings.length ? bookings.map((item,index)=><BookingRow key={idOf(item)||index} item={item} onUpdate={(status)=>run(()=>businessApi.updateBooking(idOf(item),{bookingStatus:status}),"Booking status updated.")} busy={busy}/>) : <p className="text-sm text-white/50">No bookings available.</p>}</div></article></div>}
 
+      {section === "reviews" && <div className="mt-6 space-y-4">{reviews.length ? reviews.map((review, index) => {
+        const reviewId = idOf(review);
+        const existingResponse = review.businessResponse?.response || review.businessResponse || review.response?.response || review.response || "";
+        return <article key={reviewId || index} className={panel}>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-bold">{review.user?.name || review.customer?.name || review.userName || "Customer review"}</h2><p className="mt-1 text-sm text-amber-200">{Number(review.rating) || "-"} / 5</p></div>{badge(review.status || review.reviewStatus || "PUBLISHED")}</div>
+          {review.comment && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-white/75">{review.comment}</p>}
+          {existingResponse && <p className="mt-4 rounded-lg border-l-2 border-lime-300/60 bg-black/20 p-3 text-sm text-white/65"><span className="font-semibold text-lime-200">Your reply:</span> {existingResponse}</p>}
+          <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={(event) => { event.preventDefault(); void submitReviewResponse(review); }}>
+            <textarea required rows={2} value={reviewReplies[reviewId] || ""} onChange={(event) => setReviewReplies((current) => ({ ...current, [reviewId]: event.target.value }))} placeholder={existingResponse ? "Update your reply" : "Write a reply to this review"} className={`${field} min-h-12 flex-1`} />
+            <button disabled={busy || !reviewId} className={button}>{existingResponse ? "Update reply" : "Reply"}</button>
+          </form>
+        </article>;
+      }) : <p className={`${panel} mt-6 text-sm text-white/50`}>No published reviews for your turfs yet.</p>}</div>}
       {section === "finance" && <div className="mt-6 grid gap-5 lg:grid-cols-2"><article className={`${panel} lg:col-span-2`}><h2 className="mb-4 text-lg font-bold">Available plans</h2><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{plans.map((plan,index)=>{const currentPlan=isCurrentPlan(plan,subscription);return <div key={idOf(plan)||index} className="rounded-xl border border-white/10 bg-black/20 p-4"><div className="flex items-start justify-between gap-2"><p className="font-bold">{title(plan)}</p>{currentPlan&&<span className="rounded-full bg-lime-300/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-lime-200">Current plan</span>}</div><p className="mt-1 text-sm text-white/50">{plan.description || `${plan.trialDays || 0} trial days`}</p><p className="mt-3 text-lg font-black">{plan.monthlyPricePaise !== undefined ? moneyFromPaise(plan.monthlyPricePaise) : `₹${Number(plan.monthlyPrice ?? plan.price ?? 0).toLocaleString("en-IN")}`}<span className="text-xs font-normal text-white/45"> / month</span></p>{!currentPlan&&<div className="mt-4 flex flex-wrap gap-2">{Number(plan.monthlyPrice ?? plan.price ?? plan.monthlyPricePaise ?? 0) === 0 && <button className={button} disabled={busy} onClick={()=>void run(()=>businessApi.activateFreePlan({planId:idOf(plan),billingCycle:"MONTHLY"}),"Free plan activated.")}>Activate free</button>}{Number(plan.trialDays)>0 && <button className={secondary} disabled={busy} onClick={()=>void run(()=>businessApi.startTrial({planId:idOf(plan)}),"Trial started.")}>Start trial</button>}{Number(plan.monthlyPrice ?? plan.price ?? plan.monthlyPricePaise ?? 0)>0 && <button className={secondary} disabled={busy} onClick={()=>void startPaidCheckout(idOf(plan),title(plan))}>{busy ? "Opening checkout…" : "Pay with Razorpay"}</button>}</div>}</div>;})}</div>{!plans.length&&<p className="text-sm text-white/45">No active plans returned.</p>}</article>
         <article className={panel}><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-bold">Current subscription</h2><p className="mt-1 text-sm text-white/45">Your plan and billing period</p></div>{subscription&&badge(subscription.status)}</div>{subscription ? <><div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs uppercase tracking-wide text-white/45">Plan</p><p className="mt-1 text-xl font-bold">{subscription.plan?.name || subscription.plan?.displayName || "Business plan"}</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-xs text-white/45">Billing cycle</p><p className="mt-1 font-semibold">{String(subscription.billingCycle || "—").toLowerCase()}</p></div><div><p className="text-xs text-white/45">Current amount</p><p className="mt-1 font-semibold">{moneyFromPaise(subscription.amountPaise ?? subscription.plan?.monthlyPricePaise)}</p></div><div><p className="text-xs text-white/45">Period starts</p><p className="mt-1 font-semibold">{formatDate(subscription.currentPeriodStart)}</p></div><div><p className="text-xs text-white/45">Period ends</p><p className="mt-1 font-semibold">{formatDate(subscription.currentPeriodEnd)}</p></div></div>{subscription.cancelAtPeriodEnd && <p className="mt-4 rounded-lg bg-amber-300/10 px-3 py-2 text-xs text-amber-100">Cancellation is scheduled for the end of this billing period.</p>}</div><button className={`${secondary} mt-4`} disabled={busy || subscription.cancelAtPeriodEnd} onClick={()=>void run(()=>businessApi.cancelSubscription(),"Subscription cancellation scheduled.")}>{subscription.cancelAtPeriodEnd ? "Cancellation scheduled" : "Cancel subscription"}</button></> : <p className="mt-5 text-sm text-white/50">No active subscription.</p>}</article>
         <article className={panel}><h2 className="text-lg font-bold">Statement totals</h2><p className="mt-1 text-sm text-white/45">Amounts shown in INR</p><div className="mt-5 space-y-3">{Object.entries(statement.totals||{}).filter(([key,value])=>key !== "_id" && typeof value === "number" && Number.isFinite(value)).map(([key,value])=><div key={key} className="flex justify-between gap-3 border-b border-white/5 pb-2 text-sm"><span className="capitalize text-white/55">{key.replace(/Paise$/,"" )}</span><b>{moneyFromPaise(value)}</b></div>)}{!Object.entries(statement.totals||{}).some(([key,value])=>key !== "_id" && typeof value === "number" && Number.isFinite(value)) && <p className="text-sm text-white/50">Statement totals are not available yet.</p>}</div><h3 className="mb-3 mt-6 font-bold">Recent settlements</h3>{list(settlements,"No settlements yet.")}</article></div>}

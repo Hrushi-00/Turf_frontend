@@ -77,9 +77,14 @@ export default function BookingTurfsPage() {
     };
     queueMicrotask(() => {
       if (!active) return;
-      const initialQuery = new URLSearchParams(window.location.search).get("q");
-      if (initialQuery) applySearchTerm(initialQuery);
       const initialParams = new URLSearchParams(window.location.search);
+      const initialQuery = initialParams.get("q");
+      if (initialQuery) applySearchTerm(initialQuery);
+      const initialSport = sports.find((value) => value !== "All" && value.toLowerCase() === initialParams.get("sport")?.toLowerCase());
+      if (initialSport) {
+        setSport(initialSport);
+        setFilters((current) => ({ ...current, sport: initialSport.toLowerCase() }));
+      }
       if (initialParams.get("nearby") === "1") findNearbyTurfs();
     });
     const handleCatalogSearch = (event: Event) => {
@@ -127,18 +132,27 @@ export default function BookingTurfsPage() {
     return () => { active = false; };
   }, [filters, page, refreshKey, nearbyMode, coordinates, radiusKm]);
 
-  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const commitFilters = (selectedSport: string) => {
+    const minimum = draft.minPrice === "" ? undefined : Number(draft.minPrice);
+    const maximum = draft.maxPrice === "" ? undefined : Number(draft.maxPrice);
+    if (minimum !== undefined && maximum !== undefined && minimum > maximum) {
+      setError("Minimum price cannot be greater than maximum price.");
+      return;
+    }
+    setError("");
     setNearbyMode(false);
     setPage(1);
-    setFilters({ ...draft, sport: sport === "All" ? "" : sport.toLowerCase() });
+    setFilters({ ...draft, sport: selectedSport === "All" ? "" : selectedSport.toLowerCase() });
+  };
+
+  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    commitFilters(sport);
   };
 
   const selectSport = (value: string) => {
-    setNearbyMode(false);
     setSport(value);
-    setPage(1);
-    setFilters({ ...filters, sport: value === "All" ? "" : value.toLowerCase() });
+    commitFilters(value);
   };
 
   const sortedItems = nearbyMode ? items : [...items].sort((a, b) => {

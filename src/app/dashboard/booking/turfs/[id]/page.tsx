@@ -40,6 +40,7 @@ export default function TurfDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reviews, setReviews] = useState<TurfReview[]>([]);
+  const [selectedPictureIndex, setSelectedPictureIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +73,21 @@ export default function TurfDetailsPage() {
   const pricing = turf?.pricing;
   const schedule = turf?.availability;
   const pictures = [turf?.gallery?.mainImage, ...(turf?.gallery?.thumbnailImages || [])].filter((url): url is string => Boolean(url));
+
+  useEffect(() => {
+    if (selectedPictureIndex === null) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedPictureIndex(null);
+      if (event.key === "ArrowRight") setSelectedPictureIndex((index) => index === null ? null : (index + 1) % pictures.length);
+      if (event.key === "ArrowLeft") setSelectedPictureIndex((index) => index === null ? null : (index - 1 + pictures.length) % pictures.length);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = "";
+    };
+  }, [selectedPictureIndex, pictures.length]);
   const currency = pricing?.currency === "INR" || !pricing?.currency ? "₹" : `${pricing.currency} `;
   const reviewRatings = reviews.map((review) => Number(review.rating)).filter((rating) => Number.isFinite(rating) && rating > 0);
   const storedRating = typeof turf?.rating === "number" ? turf.rating : turf?.rating?.average ?? turf?.rating?.value ?? turf?.averageRating;
@@ -93,8 +109,11 @@ export default function TurfDetailsPage() {
               <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
                 <section className="space-y-5">
                   <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.04]">
-                    {pictures[0] ? <img src={pictures[0]} alt={details?.turfName || "Turf"} className="h-[280px] w-full object-cover md:h-[420px]" /> : <div className="h-[280px] bg-gradient-to-br from-lime-950 to-zinc-900 md:h-[420px]" />}
-                    {pictures.length > 1 && <div className="grid grid-cols-3 gap-2 p-3">{pictures.slice(1, 4).map((url, index) => <img key={`${url}-${index}`} src={url} alt={`${details?.turfName || "Turf"} photo ${index + 2}`} className="h-24 w-full rounded-lg object-cover" />)}</div>}
+                    {pictures[0] ? <button type="button" onClick={() => setSelectedPictureIndex(0)} aria-label="View full size image" className="group relative block w-full cursor-zoom-in">
+                      <img src={pictures[0]} alt={details?.turfName || "Turf"} className="h-[280px] w-full object-cover md:h-[420px]" />
+                      <span className="absolute bottom-3 right-3 rounded-lg bg-black/70 px-3 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100">Click to view full image</span>
+                    </button> : <div className="h-[280px] bg-gradient-to-br from-lime-950 to-zinc-900 md:h-[420px]" />}
+                    {pictures.length > 1 && <div className="grid grid-cols-3 gap-2 p-3">{pictures.slice(1, 4).map((url, index) => <button key={`${url}-${index}`} type="button" onClick={() => setSelectedPictureIndex(index + 1)} aria-label={`View full size photo ${index + 2}`} className="cursor-zoom-in overflow-hidden rounded-lg"><img src={url} alt={`${details?.turfName || "Turf"} photo ${index + 2}`} className="h-24 w-full object-cover transition hover:scale-105" /></button>)}</div>}
                   </div>
                   <section className="rounded-2xl border border-white/10 bg-white/[.035] p-6"><h2 className="text-xl font-bold">About this turf</h2><p className="mt-3 whitespace-pre-line leading-7 text-zinc-300">{details?.description || "No description provided."}</p></section>
                   <section className="rounded-2xl border border-white/10 bg-white/[.035] p-6"><h2 className="text-xl font-bold">Amenities</h2>{turf.amenities?.length ? <div className="mt-4 flex flex-wrap gap-2">{turf.amenities.map((amenity) => <span key={amenity} className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-sm text-zinc-300">{amenity}</span>)}</div> : <p className="mt-3 text-zinc-400">No amenities listed.</p>}</section>
@@ -130,6 +149,21 @@ export default function TurfDetailsPage() {
               <div className="mt-8"><Link href={`/dashboard/booking?turf=${encodeURIComponent(turfId)}`} className="inline-flex rounded-xl bg-lime-300 px-7 py-4 font-black text-black hover:bg-lime-200">Book this turf</Link></div>
             </>}
       </div>
+      {selectedPictureIndex !== null && pictures[selectedPictureIndex] && (
+        <div
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPictureIndex(null); }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm md:p-8"
+        >
+          <div role="dialog" aria-modal="true" aria-label="Full size turf photos" className="relative flex max-h-full w-full max-w-7xl items-center justify-center">
+            <button type="button" onClick={() => setSelectedPictureIndex(null)} aria-label="Close full size image" className="absolute right-0 top-0 z-10 rounded-full bg-white/10 px-4 py-2 text-2xl text-white hover:bg-white/20">&times;</button>
+            {pictures.length > 1 && <button type="button" onClick={() => setSelectedPictureIndex((selectedPictureIndex - 1 + pictures.length) % pictures.length)} aria-label="Previous image" className="absolute left-0 z-10 rounded-full bg-black/60 px-4 py-3 text-2xl text-white hover:bg-black/90">&#8249;</button>}
+            <img src={pictures[selectedPictureIndex]} alt={`${details?.turfName || "Turf"} photo ${selectedPictureIndex + 1}`} className="max-h-[calc(100vh-5rem)] max-w-full object-contain" />
+            {pictures.length > 1 && <button type="button" onClick={() => setSelectedPictureIndex((selectedPictureIndex + 1) % pictures.length)} aria-label="Next image" className="absolute right-0 z-10 rounded-full bg-black/60 px-4 py-3 text-2xl text-white hover:bg-black/90">&#8250;</button>}
+            <span className="absolute bottom-0 rounded-full bg-black/60 px-3 py-1 text-sm text-white">{selectedPictureIndex + 1} / {pictures.length}</span>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -7,6 +7,8 @@ import { getCurrentUser, isUserLoggedIn, logout } from "@/src/services/authServi
 import { platformApi } from "@/src/services/platformService";
 import type { ApiRecord } from "@/src/types/apiRecord";
 
+const popularSports = ["Football", "Cricket", "Badminton", "Tennis", "Basketball"];
+
 export default function Navbar() {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -148,19 +150,31 @@ export default function Navbar() {
         {/* Desktop Nav Links */}
         <div className="hidden xl:flex items-center gap-8">
           <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Explore</Link>
-          <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Sports</Link>
+          <div className="group relative">
+            <button type="button" aria-haspopup="true" className="flex items-center gap-1 text-sm font-medium text-gray-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+              Sports
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 transition-transform group-hover:rotate-180 group-focus-within:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.09 1.03l-4.25 4.5a.75.75 0 0 1-1.09 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
+            </button>
+            <div className="invisible pointer-events-none absolute left-0 top-full z-50 min-w-48 translate-y-1 rounded-xl border border-white/15 bg-[#111] p-2 opacity-0 shadow-2xl transition-all group-hover:visible group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+              {popularSports.map((sport) => (
+                <Link key={sport} href={`/dashboard/booking/turfs?sport=${encodeURIComponent(sport.toLowerCase())}`} className="block rounded-lg px-3 py-2 text-sm text-gray-300 transition hover:bg-white/10 hover:text-white">
+                  {sport}
+                </Link>
+              ))}
+            </div>
+          </div>
           <Link href="/dashboard/booking/turfs" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Turfs</Link>
           <Link href="/" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">Pricing</Link>
         </div>
 
         {/* CTA Buttons */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <form onSubmit={submitSearch} role="search" className="hidden 2xl:flex items-center rounded-full border border-white/15 bg-white/[.06] px-3 py-2 focus-within:border-lime-300/70">
+          <form onSubmit={submitSearch} role="search" className="hidden xl:flex items-center rounded-full border border-white/15 bg-white/[.06] px-3 py-2 focus-within:border-lime-300/70">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="mr-2 h-4 w-4 text-gray-400" stroke="currentColor" strokeWidth="2"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" strokeLinecap="round" /></svg>
             <input aria-label="Search turfs" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Search turfs" className="w-28 bg-transparent text-sm text-white outline-none placeholder:text-gray-500 xl:w-36" />
             <button aria-label="Submit search" className="text-xs font-semibold text-lime-300">Search</button>
           </form>
-          <button type="button" onClick={openNearbySearch} className="hidden 2xl:inline-flex items-center gap-2 rounded-full border border-lime-300/40 px-3 py-2 text-sm font-semibold text-lime-200 transition hover:bg-lime-300/10">
+          <button type="button" onClick={openNearbySearch} className="hidden xl:inline-flex items-center gap-2 rounded-full border border-lime-300/40 px-3 py-2 text-sm font-semibold text-lime-200 transition hover:bg-lime-300/10">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
             Nearby
           </button>
@@ -223,7 +237,19 @@ export default function Navbar() {
           <div className="absolute top-full left-0 right-0 bg-black border-b border-white/20 xl:hidden">
             <div className="flex flex-col gap-4 px-6 py-6">
               <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Explore</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Sports</Link>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-gray-400 transition-colors hover:text-white">
+                  Sports
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 transition-transform group-open:rotate-180"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.09 1.03l-4.25 4.5a.75.75 0 0 1-1.09 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
+                </summary>
+                <div className="mt-2 grid grid-cols-2 gap-1 border-l border-white/15 pl-3">
+                  {popularSports.map((sport) => (
+                    <Link key={sport} onClick={() => setMobileMenuOpen(false)} href={`/dashboard/booking/turfs?sport=${encodeURIComponent(sport.toLowerCase())}`} className="rounded-lg px-3 py-2 text-sm text-gray-400 transition hover:bg-white/10 hover:text-white">
+                      {sport}
+                    </Link>
+                  ))}
+                </div>
+              </details>
               <Link onClick={() => setMobileMenuOpen(false)} href="/dashboard/booking/turfs" className="text-sm text-gray-400 hover:text-white transition-colors">Turfs / Search</Link>
               <Link onClick={() => setMobileMenuOpen(false)} href="/" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
               {!pathname.startsWith("/dashboard") && (
