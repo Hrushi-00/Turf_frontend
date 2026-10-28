@@ -176,13 +176,6 @@ export default function UserAccountPage() {
   const reviewableBookings = (data.bookings || []).filter((booking) =>
     String(booking.status || "").toLowerCase() === "completed" && !reviewedBookingIds.has(String(booking.id))
   );
-  const reviewedBookingIds = new Set((data.reviews || []).map((review) => {
-    const booking = review.bookingId;
-    return String(typeof booking === "object" ? booking?._id || booking?.id || "" : booking || "");
-  }).filter(Boolean));
-  const reviewableBookings = (data.bookings || []).filter((booking) =>
-    String(booking.status || "").toLowerCase() === "completed" && !reviewedBookingIds.has(String(booking.id))
-  );
   const fieldClass = "mt-2 w-full rounded-lg border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-lime-300";
   const buttonClass = "rounded-lg bg-lime-300 px-4 py-3 font-bold text-black hover:bg-lime-200 disabled:opacity-50";
 
